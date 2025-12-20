@@ -22,13 +22,15 @@ After installation, restart n8n so it loads the new node from `~/.n8n/custom` (o
 
 ## Operations
 
-All functionality is exposed by a single node named **SmartSchool**. It currently supports three resource families:
+All functionality is exposed by a single node named **SmartSchool**. It currently supports five resource families:
 
 | Resource | Operations | Description |
 | --- | --- | --- |
 | `Group` | `Get All Accounts`, `Get All Accounts (Extended)` | Fetch the members of a class or subgroup, optionally including descendants. |
 | `Helpdesk` | `List Helpdesk Items`, `Create Helpdesk Ticket` | Retrieve the helpdesk mini database (categories + item IDs) and create new tickets. |
 | `Message` | `Send Message` | Send SmartSchool messages (main account or co-account) with optional attachments and LVS copy. |
+| `Account` | `Get User Details`, `Get User Details by Number`, `Get User Details by Username`, `Get User Details by Scannable Code`, `Get User Official Class` | Inspect any user profile via multiple identifiers and retrieve their official class assignment. |
+| `Parameter` | `Get Reference Field` | Fetch the platform reference field configuration and documentation. |
 
 Roadmap work (additional API coverage) is tracked in `docs/SMARTSCHOOL-ROADMAP.md`.
 

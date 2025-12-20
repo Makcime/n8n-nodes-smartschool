@@ -32,13 +32,13 @@ Below is the proposed mapping (✅ = implemented, ⏳ = in progress, ⛳ = plann
 
 | Bucket | Operations | Status |
 | --- | --- | --- |
-| **Accounts & Users** | getAllAccounts ✅, getAllAccountsExtended ✅, getUserDetails, getUserDetailsByNumber, getUserDetailsByUsername, getUserDetailsByScannableCode, getUserOfficialClass, saveUser, delUser, setAccountStatus, changeUsername, changeInternNumber, changePasswordAtNextLogin, forcePasswordReset, replaceInum, saveUserParameter, removeCoAccount, savePassword | ⛳ |
+| **Accounts & Users** | getAllAccounts ✅, getAllAccountsExtended ✅, getUserDetails ✅, getUserDetailsByNumber ✅, getUserDetailsByUsername ✅, getUserDetailsByScannableCode ✅, getUserOfficialClass ✅, saveUser, delUser, setAccountStatus, changeUsername, changeInternNumber, changePasswordAtNextLogin, forcePasswordReset, replaceInum, saveUserParameter, removeCoAccount, savePassword | ⛳ |
 | **Groups & Classes** | getAllGroupsAndClasses, getClassList, getClassListJson, getClassTeachers, saveGroup, saveClass, saveUserToGroup, removeUserFromGroup, delClass, saveClassList, saveClassListJson, getSchoolyearDataOfClass, saveSchoolyearDataOfClass, getSkoreClassTeacherCourseRelation, clearGroup, unregisterStudent | ⛳ |
 | **Absences** | getAbsents, getAbsentsWithAlias, getAbsentsByDate, getAbsentsWithAliasByDate, getAbsentsWithInternalNumberByDate, getAbsentsWithUsernameByDate, getAbsentsByDateAndGroup | ⛳ |
 | **Messages** | sendMsg, saveSignature | ⛳ |
 | **Courses** | addCourse, addCourseStudents, addCourseTeacher, getCourses | ⛳ |
 | **Helpdesk** | addHelpdeskTicket, getHelpdeskMiniDbItems | ⛳ |
-| **Parameters** | getReferenceField, returnCsvErrorCodes, returnJsonErrorCodes | ⛳ |
+| **Parameters** | getReferenceField ✅, returnCsvErrorCodes, returnJsonErrorCodes | ⛳ |
 | **System** | startSkoreSync, checkStatus | ⛳ |
 | **Deprecated** | deactivateTwoFactorAuthentication (skip, doc-only) | ❌ |
 
@@ -58,12 +58,13 @@ We will work resource-by-resource. Each row should end up in git history as its 
 
 #### Milestone 2 – Read Operations Expansion
 
-- [ ] Accounts: add `getUserDetails*` trio  
-- [ ] Accounts: add `getUserOfficialClass`  
+- [x] Accounts: add `getUserDetails*` trio  
+- [x] Accounts: add `getUserOfficialClass`  
 - [ ] Groups: add `getAllGroupsAndClasses`, `getClassList`, `getClassListJson`, `getClassTeachers`  
 - [ ] Absences: implement full set with pagination helpers  
 - [ ] Courses (read): `getCourses`  
-- [ ] Parameters: `getReferenceField`, error code lookups  
+- [x] Parameters: `getReferenceField`  
+- [ ] Parameters: error code lookups  
 
 #### Milestone 3 – Mutation Suite
 

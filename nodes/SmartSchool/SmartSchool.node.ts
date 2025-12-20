@@ -9,13 +9,19 @@ import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 import { getSmartSchoolClient } from './GenericFunctions';
 
-type SupportedResource = 'group' | 'helpdesk' | 'message';
+type SupportedResource = 'group' | 'helpdesk' | 'message' | 'account' | 'parameter';
 type SupportedOperation =
 	| 'getAllAccounts'
 	| 'getAllAccountsExtended'
 	| 'getHelpdeskMiniDbItems'
 	| 'addHelpdeskTicket'
-	| 'sendMsg';
+	| 'sendMsg'
+	| 'getUserDetails'
+	| 'getUserDetailsByNumber'
+	| 'getUserDetailsByUsername'
+	| 'getUserDetailsByScannableCode'
+	| 'getUserOfficialClass'
+	| 'getReferenceField';
 
 export class SmartSchool implements INodeType {
 	description: INodeTypeDescription = {
@@ -60,6 +66,58 @@ export class SmartSchool implements INodeType {
 						name: 'Message',
 						value: 'message',
 					},
+					{
+						name: 'Account',
+						value: 'account',
+					},
+					{
+						name: 'Parameter',
+						value: 'parameter',
+					},
+				],
+			},
+			{
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				default: 'getUserDetails',
+				displayOptions: {
+					show: {
+						resource: ['account'],
+					},
+				},
+				options: [
+					{
+						name: 'Get User Details',
+						value: 'getUserDetails',
+						description: 'Get user details by SmartSchool identifier',
+						action: 'Get user details',
+					},
+					{
+						name: 'Get User Details by Number',
+						value: 'getUserDetailsByNumber',
+						description: 'Get user details by internal number',
+						action: 'Get user details by number',
+					},
+					{
+						name: 'Get User Details by Username',
+						value: 'getUserDetailsByUsername',
+						description: 'Get user details by username',
+						action: 'Get user details by username',
+					},
+					{
+						name: 'Get User Details by Scannable Code',
+						value: 'getUserDetailsByScannableCode',
+						description: 'Get user details by scannable code',
+						action: 'Get user details by scannable code',
+					},
+					{
+						name: 'Get User Official Class',
+						value: 'getUserOfficialClass',
+						description: 'Retrieve the official class for a user',
+						action: 'Get user official class',
+					},
 				],
 			},
 			{
@@ -85,6 +143,26 @@ export class SmartSchool implements INodeType {
 						value: 'getAllAccountsExtended',
 						description: 'List all user accounts from a SmartSchool group with extended metadata',
 						action: 'Get all accounts extended',
+					},
+				],
+			},
+			{
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				default: 'getReferenceField',
+				displayOptions: {
+					show: {
+						resource: ['parameter'],
+					},
+				},
+				options: [
+					{
+						name: 'Get Reference Field',
+						value: 'getReferenceField',
+						description: 'Retrieve the reference field configuration',
+						action: 'Get reference field',
 					},
 				],
 			},
@@ -168,48 +246,48 @@ export class SmartSchool implements INodeType {
 				type: 'string',
 				default: '',
 				required: true,
-					description: 'Subject line for the helpdesk ticket or message',
-					displayOptions: {
-						show: {
-							resource: ['helpdesk', 'message'],
-							operation: ['addHelpdeskTicket', 'sendMsg'],
-						},
+				description: 'Subject line for the helpdesk ticket or message',
+				displayOptions: {
+					show: {
+						resource: ['helpdesk', 'message'],
+						operation: ['addHelpdeskTicket', 'sendMsg'],
 					},
 				},
-				{
-					displayName: 'Description',
-					name: 'ticketDescription',
-					type: 'string',
-					typeOptions: {
+			},
+			{
+				displayName: 'Description',
+				name: 'ticketDescription',
+				type: 'string',
+				typeOptions: {
 					rows: 4,
 				},
 				default: '',
 				required: true,
-					description: 'Explain the problem or request in detail',
-					displayOptions: {
-						show: {
-							resource: ['helpdesk'],
-							operation: ['addHelpdeskTicket'],
-						},
+				description: 'Explain the problem or request in detail',
+				displayOptions: {
+					show: {
+						resource: ['helpdesk'],
+						operation: ['addHelpdeskTicket'],
 					},
 				},
-				{
-					displayName: 'Message Body',
-					name: 'messageBody',
-					type: 'string',
-					typeOptions: {
-						rows: 4,
-					},
-					default: '',
-					required: true,
-					description: 'Content of the SmartSchool message',
-					displayOptions: {
-						show: {
-							resource: ['message'],
-							operation: ['sendMsg'],
-						},
+			},
+			{
+				displayName: 'Message Body',
+				name: 'messageBody',
+				type: 'string',
+				typeOptions: {
+					rows: 4,
+				},
+				default: '',
+				required: true,
+				description: 'Content of the SmartSchool message',
+				displayOptions: {
+					show: {
+						resource: ['message'],
+						operation: ['sendMsg'],
 					},
 				},
+			},
 			{
 				displayName: 'Priority',
 				name: 'priority',
@@ -242,20 +320,80 @@ export class SmartSchool implements INodeType {
 					},
 				},
 			},
-				{
-					displayName: 'User Identifier',
-					name: 'userIdentifier',
-					type: 'string',
-					default: '',
-					required: true,
-					description: 'Username or unique identifier of the ticket creator or message recipient',
-					displayOptions: {
-						show: {
-							resource: ['helpdesk', 'message'],
-							operation: ['addHelpdeskTicket', 'sendMsg'],
-						},
+			{
+				displayName: 'User Identifier',
+				name: 'userIdentifier',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Username or identifier of the ticket creator, recipient, or lookup target',
+				displayOptions: {
+					show: {
+						resource: ['helpdesk', 'message', 'account'],
+						operation: [
+							'addHelpdeskTicket',
+							'sendMsg',
+							'getUserDetails',
+							'getUserOfficialClass',
+						],
 					},
 				},
+			},
+			{
+				displayName: 'Internal Number',
+				name: 'internalNumber',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Internal SmartSchool number of the user',
+				displayOptions: {
+					show: {
+						resource: ['account'],
+						operation: ['getUserDetailsByNumber'],
+					},
+				},
+			},
+			{
+				displayName: 'Username',
+				name: 'accountUsername',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'SmartSchool username',
+				displayOptions: {
+					show: {
+						resource: ['account'],
+						operation: ['getUserDetailsByUsername'],
+					},
+				},
+			},
+			{
+				displayName: 'Scannable Code',
+				name: 'scannableCode',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Scannable code linked to the user (badge/UUID)',
+				displayOptions: {
+					show: {
+						resource: ['account'],
+						operation: ['getUserDetailsByScannableCode'],
+					},
+				},
+			},
+			{
+				displayName: 'Official Class Date',
+				name: 'officialClassDate',
+				type: 'string',
+				default: '',
+				description: 'Date (YYYY-MM-DD). Leave empty to use today',
+				displayOptions: {
+					show: {
+						resource: ['account'],
+						operation: ['getUserOfficialClass'],
+					},
+				},
+			},
 				{
 					displayName: 'Sender Identifier',
 					name: 'senderIdentifier',
@@ -349,6 +487,23 @@ export class SmartSchool implements INodeType {
 		const accesscode = credentials.accesscode as string;
 
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
+			const normalizeAndPush = (data: unknown) => {
+				if (Array.isArray(data)) {
+					for (const entry of data) {
+						returnData.push({
+							json: (entry ?? {}) as IDataObject,
+							pairedItem: { item: itemIndex },
+						});
+					}
+					return;
+				}
+
+				returnData.push({
+					json: (data ?? {}) as IDataObject,
+					pairedItem: { item: itemIndex },
+				});
+			};
+
 			try {
 				const resource = this.getNodeParameter('resource', itemIndex) as SupportedResource;
 				const operation = this.getNodeParameter('operation', itemIndex) as SupportedOperation;
@@ -386,6 +541,63 @@ export class SmartSchool implements INodeType {
 					}
 
 					continue;
+				}
+
+				if (resource === 'account') {
+					if (operation === 'getUserDetails') {
+						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
+						const response = await client.getUserDetails({
+							accesscode,
+							userIdentifier,
+						});
+						normalizeAndPush(response);
+						continue;
+					}
+
+					if (operation === 'getUserDetailsByNumber') {
+						const number = this.getNodeParameter('internalNumber', itemIndex) as string;
+						const response = await client.getUserDetailsByNumber({
+							accesscode,
+							number,
+						});
+						normalizeAndPush(response);
+						continue;
+					}
+
+					if (operation === 'getUserDetailsByUsername') {
+						const username = this.getNodeParameter('accountUsername', itemIndex) as string;
+						const response = await client.getUserDetailsByUsername({
+							accesscode,
+							username,
+						});
+						normalizeAndPush(response);
+						continue;
+					}
+
+					if (operation === 'getUserDetailsByScannableCode') {
+						const scannableCode = this.getNodeParameter('scannableCode', itemIndex) as string;
+						const response = await client.getUserDetailsByScannableCode({
+							accesscode,
+							scannableCode,
+						});
+						normalizeAndPush(response);
+						continue;
+					}
+
+					if (operation === 'getUserOfficialClass') {
+						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
+						const date =
+							(this.getNodeParameter('officialClassDate', itemIndex, '') as string) ||
+							new Date().toISOString().slice(0, 10);
+
+						const response = await client.getUserOfficialClass({
+							accesscode,
+							userIdentifier,
+							date,
+						});
+						normalizeAndPush(response);
+						continue;
+					}
 				}
 
 				if (resource === 'helpdesk') {
@@ -474,6 +686,12 @@ export class SmartSchool implements INodeType {
 						pairedItem: { item: itemIndex },
 					});
 
+					continue;
+				}
+
+				if (resource === 'parameter' && operation === 'getReferenceField') {
+					const response = await client.getReferenceField();
+					normalizeAndPush(response);
 					continue;
 				}
 

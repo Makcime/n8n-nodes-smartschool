@@ -47,6 +47,58 @@ class SmartSchool {
                             name: 'Message',
                             value: 'message',
                         },
+                        {
+                            name: 'Account',
+                            value: 'account',
+                        },
+                        {
+                            name: 'Parameter',
+                            value: 'parameter',
+                        },
+                    ],
+                },
+                {
+                    displayName: 'Operation',
+                    name: 'operation',
+                    type: 'options',
+                    noDataExpression: true,
+                    default: 'getUserDetails',
+                    displayOptions: {
+                        show: {
+                            resource: ['account'],
+                        },
+                    },
+                    options: [
+                        {
+                            name: 'Get User Details',
+                            value: 'getUserDetails',
+                            description: 'Get user details by SmartSchool identifier',
+                            action: 'Get user details',
+                        },
+                        {
+                            name: 'Get User Details by Number',
+                            value: 'getUserDetailsByNumber',
+                            description: 'Get user details by internal number',
+                            action: 'Get user details by number',
+                        },
+                        {
+                            name: 'Get User Details by Username',
+                            value: 'getUserDetailsByUsername',
+                            description: 'Get user details by username',
+                            action: 'Get user details by username',
+                        },
+                        {
+                            name: 'Get User Details by Scannable Code',
+                            value: 'getUserDetailsByScannableCode',
+                            description: 'Get user details by scannable code',
+                            action: 'Get user details by scannable code',
+                        },
+                        {
+                            name: 'Get User Official Class',
+                            value: 'getUserOfficialClass',
+                            description: 'Retrieve the official class for a user',
+                            action: 'Get user official class',
+                        },
                     ],
                 },
                 {
@@ -72,6 +124,26 @@ class SmartSchool {
                             value: 'getAllAccountsExtended',
                             description: 'List all user accounts from a SmartSchool group with extended metadata',
                             action: 'Get all accounts extended',
+                        },
+                    ],
+                },
+                {
+                    displayName: 'Operation',
+                    name: 'operation',
+                    type: 'options',
+                    noDataExpression: true,
+                    default: 'getReferenceField',
+                    displayOptions: {
+                        show: {
+                            resource: ['parameter'],
+                        },
+                    },
+                    options: [
+                        {
+                            name: 'Get Reference Field',
+                            value: 'getReferenceField',
+                            description: 'Retrieve the reference field configuration',
+                            action: 'Get reference field',
                         },
                     ],
                 },
@@ -233,11 +305,71 @@ class SmartSchool {
                     type: 'string',
                     default: '',
                     required: true,
-                    description: 'Username or unique identifier of the ticket creator or message recipient',
+                    description: 'Username or identifier of the ticket creator, recipient, or lookup target',
                     displayOptions: {
                         show: {
-                            resource: ['helpdesk', 'message'],
-                            operation: ['addHelpdeskTicket', 'sendMsg'],
+                            resource: ['helpdesk', 'message', 'account'],
+                            operation: [
+                                'addHelpdeskTicket',
+                                'sendMsg',
+                                'getUserDetails',
+                                'getUserOfficialClass',
+                            ],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Internal Number',
+                    name: 'internalNumber',
+                    type: 'string',
+                    default: '',
+                    required: true,
+                    description: 'Internal SmartSchool number of the user',
+                    displayOptions: {
+                        show: {
+                            resource: ['account'],
+                            operation: ['getUserDetailsByNumber'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Username',
+                    name: 'accountUsername',
+                    type: 'string',
+                    default: '',
+                    required: true,
+                    description: 'SmartSchool username',
+                    displayOptions: {
+                        show: {
+                            resource: ['account'],
+                            operation: ['getUserDetailsByUsername'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Scannable Code',
+                    name: 'scannableCode',
+                    type: 'string',
+                    default: '',
+                    required: true,
+                    description: 'Scannable code linked to the user (badge/UUID)',
+                    displayOptions: {
+                        show: {
+                            resource: ['account'],
+                            operation: ['getUserDetailsByScannableCode'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Official Class Date',
+                    name: 'officialClassDate',
+                    type: 'string',
+                    default: '',
+                    description: 'Date (YYYY-MM-DD). Leave empty to use today',
+                    displayOptions: {
+                        show: {
+                            resource: ['account'],
+                            operation: ['getUserOfficialClass'],
                         },
                     },
                 },
@@ -334,6 +466,21 @@ class SmartSchool {
         const credentials = (await this.getCredentials('smartSchoolApi'));
         const accesscode = credentials.accesscode;
         for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
+            const normalizeAndPush = (data) => {
+                if (Array.isArray(data)) {
+                    for (const entry of data) {
+                        returnData.push({
+                            json: (entry !== null && entry !== void 0 ? entry : {}),
+                            pairedItem: { item: itemIndex },
+                        });
+                    }
+                    return;
+                }
+                returnData.push({
+                    json: (data !== null && data !== void 0 ? data : {}),
+                    pairedItem: { item: itemIndex },
+                });
+            };
             try {
                 const resource = this.getNodeParameter('resource', itemIndex);
                 const operation = this.getNodeParameter('operation', itemIndex);
@@ -365,6 +512,56 @@ class SmartSchool {
                         });
                     }
                     continue;
+                }
+                if (resource === 'account') {
+                    if (operation === 'getUserDetails') {
+                        const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
+                        const response = await client.getUserDetails({
+                            accesscode,
+                            userIdentifier,
+                        });
+                        normalizeAndPush(response);
+                        continue;
+                    }
+                    if (operation === 'getUserDetailsByNumber') {
+                        const number = this.getNodeParameter('internalNumber', itemIndex);
+                        const response = await client.getUserDetailsByNumber({
+                            accesscode,
+                            number,
+                        });
+                        normalizeAndPush(response);
+                        continue;
+                    }
+                    if (operation === 'getUserDetailsByUsername') {
+                        const username = this.getNodeParameter('accountUsername', itemIndex);
+                        const response = await client.getUserDetailsByUsername({
+                            accesscode,
+                            username,
+                        });
+                        normalizeAndPush(response);
+                        continue;
+                    }
+                    if (operation === 'getUserDetailsByScannableCode') {
+                        const scannableCode = this.getNodeParameter('scannableCode', itemIndex);
+                        const response = await client.getUserDetailsByScannableCode({
+                            accesscode,
+                            scannableCode,
+                        });
+                        normalizeAndPush(response);
+                        continue;
+                    }
+                    if (operation === 'getUserOfficialClass') {
+                        const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
+                        const date = this.getNodeParameter('officialClassDate', itemIndex, '') ||
+                            new Date().toISOString().slice(0, 10);
+                        const response = await client.getUserOfficialClass({
+                            accesscode,
+                            userIdentifier,
+                            date,
+                        });
+                        normalizeAndPush(response);
+                        continue;
+                    }
                 }
                 if (resource === 'helpdesk') {
                     if (operation === 'getHelpdeskMiniDbItems') {
@@ -436,6 +633,11 @@ class SmartSchool {
                         json: { success: response },
                         pairedItem: { item: itemIndex },
                     });
+                    continue;
+                }
+                if (resource === 'parameter' && operation === 'getReferenceField') {
+                    const response = await client.getReferenceField();
+                    normalizeAndPush(response);
                     continue;
                 }
                 throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Unsupported resource "${resource}" or operation "${operation}"`, { itemIndex });
