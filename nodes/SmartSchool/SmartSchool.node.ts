@@ -657,10 +657,20 @@ export class SmartSchool implements INodeType {
 			{
 				displayName: 'Account Status',
 				name: 'accountStatus',
-				type: 'string',
-				default: '',
+				type: 'options',
+				default: 'actief',
 				required: true,
-				description: 'Status label (e.g., "actief", "niet actief", "actief tot en met YYYY/MM/DD")',
+				description: 'SmartSchool account status',
+				options: [
+					{ name: 'Active (actief)', value: 'actief' },
+					{ name: 'Active (active)', value: 'active' },
+					{ name: 'Active (enabled)', value: 'enabled' },
+					{ name: 'Inactive (inactief)', value: 'inactief' },
+					{ name: 'Inactive (inactive)', value: 'inactive' },
+					{ name: 'Inactive (disabled)', value: 'disabled' },
+					{ name: 'Administrative (administrative)', value: 'administrative' },
+					{ name: 'Administrative (administratief)', value: 'administratief' },
+				],
 				displayOptions: {
 					show: {
 						resource: ['account'],
