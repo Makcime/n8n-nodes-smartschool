@@ -114,7 +114,9 @@ Use this table to keep status visible. Update `Status` column as work proceeds.
 | Item | Status | Notes |
 | --- | --- | --- |
 | Icons renamed & cache-busting | ⏳ | Waiting for confirmation after next n8n restart |
-| Shared parameter descriptions | ⛳ | Not started |
+| Shared parameter descriptions | ⏳ | Shared option sets extracted |
+| Zod validation | ✅ | Credentials validated via schema |
+| Test harness | ✅ | Vitest config + basic unit test |
 | Accounts detail operations | ✅ | Read + mutation operations available |
 | Helpdesk endpoints (list/create) | ✅ | `getHelpdeskMiniDbItems` + `addHelpdeskTicket` in SmartSchool node |
 | Messaging (sendMsg) | ✅ | Send SmartSchool messages incl. optional attachments |

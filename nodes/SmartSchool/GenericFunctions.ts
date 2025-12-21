@@ -3,6 +3,8 @@ import { NodeOperationError } from 'n8n-workflow';
 // eslint-disable-next-line @n8n/community-nodes/no-restricted-imports
 import { SmartschoolClient } from '@abrianto/smartschool-kit';
 
+import { SmartSchoolCredentialsSchema } from './shared/schemas';
+
 const xmlEscape = (value: string) =>
 	value
 		.replace(/&/g, '&amp;')
@@ -13,14 +15,16 @@ const xmlEscape = (value: string) =>
 
 export async function getSmartSchoolClient(this: IExecuteFunctions) {
 	const credentials = (await this.getCredentials('smartSchoolApi')) as IDataObject;
+	const parsed = SmartSchoolCredentialsSchema.safeParse(credentials);
 
-	if (!credentials?.apiEndpoint || !credentials?.accesscode) {
-		throw new NodeOperationError(this.getNode(), 'SmartSchool credentials are not configured correctly.');
+	if (!parsed.success) {
+		const message = parsed.error.issues.map((err) => `${err.path.join('.')}: ${err.message}`).join('; ');
+		throw new NodeOperationError(this.getNode(), `Invalid SmartSchool credentials: ${message}`);
 	}
 
 	return new SmartschoolClient({
-		apiEndpoint: credentials.apiEndpoint as string,
-		accesscode: credentials.accesscode as string,
+		apiEndpoint: parsed.data.apiEndpoint,
+		accesscode: parsed.data.accesscode,
 	});
 }
 
@@ -30,12 +34,14 @@ export async function callSmartschoolSoap(
 	params: Record<string, string | number | boolean>,
 ) {
 	const credentials = (await this.getCredentials('smartSchoolApi')) as IDataObject;
+	const parsed = SmartSchoolCredentialsSchema.safeParse(credentials);
 
-	if (!credentials?.apiEndpoint) {
-		throw new NodeOperationError(this.getNode(), 'SmartSchool credentials are not configured correctly.');
+	if (!parsed.success) {
+		const message = parsed.error.issues.map((err) => `${err.path.join('.')}: ${err.message}`).join('; ');
+		throw new NodeOperationError(this.getNode(), `Invalid SmartSchool credentials: ${message}`);
 	}
 
-	const apiEndpoint = credentials.apiEndpoint as string;
+	const apiEndpoint = parsed.data.apiEndpoint;
 	const namespace = apiEndpoint;
 	const paramXml = Object.entries(params)
 		.map(([key, value]) => `<${key}>${xmlEscape(String(value))}</${key}>`)

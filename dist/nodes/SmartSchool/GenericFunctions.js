@@ -4,6 +4,7 @@ exports.getSmartSchoolClient = getSmartSchoolClient;
 exports.callSmartschoolSoap = callSmartschoolSoap;
 const n8n_workflow_1 = require("n8n-workflow");
 const smartschool_kit_1 = require("@abrianto/smartschool-kit");
+const schemas_1 = require("./shared/schemas");
 const xmlEscape = (value) => value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -12,20 +13,24 @@ const xmlEscape = (value) => value
     .replace(/'/g, '&apos;');
 async function getSmartSchoolClient() {
     const credentials = (await this.getCredentials('smartSchoolApi'));
-    if (!(credentials === null || credentials === void 0 ? void 0 : credentials.apiEndpoint) || !(credentials === null || credentials === void 0 ? void 0 : credentials.accesscode)) {
-        throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'SmartSchool credentials are not configured correctly.');
+    const parsed = schemas_1.SmartSchoolCredentialsSchema.safeParse(credentials);
+    if (!parsed.success) {
+        const message = parsed.error.issues.map((err) => `${err.path.join('.')}: ${err.message}`).join('; ');
+        throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Invalid SmartSchool credentials: ${message}`);
     }
     return new smartschool_kit_1.SmartschoolClient({
-        apiEndpoint: credentials.apiEndpoint,
-        accesscode: credentials.accesscode,
+        apiEndpoint: parsed.data.apiEndpoint,
+        accesscode: parsed.data.accesscode,
     });
 }
 async function callSmartschoolSoap(method, params) {
     const credentials = (await this.getCredentials('smartSchoolApi'));
-    if (!(credentials === null || credentials === void 0 ? void 0 : credentials.apiEndpoint)) {
-        throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'SmartSchool credentials are not configured correctly.');
+    const parsed = schemas_1.SmartSchoolCredentialsSchema.safeParse(credentials);
+    if (!parsed.success) {
+        const message = parsed.error.issues.map((err) => `${err.path.join('.')}: ${err.message}`).join('; ');
+        throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Invalid SmartSchool credentials: ${message}`);
     }
-    const apiEndpoint = credentials.apiEndpoint;
+    const apiEndpoint = parsed.data.apiEndpoint;
     const namespace = apiEndpoint;
     const paramXml = Object.entries(params)
         .map(([key, value]) => `<${key}>${xmlEscape(String(value))}</${key}>`)

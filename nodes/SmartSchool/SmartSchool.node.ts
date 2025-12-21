@@ -10,6 +10,7 @@ import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 import { SmartschoolError } from '@abrianto/smartschool-kit';
 
 import { callSmartschoolSoap, getSmartSchoolClient } from './GenericFunctions';
+import { ACCOUNT_STATUS_OPTIONS, VISIBILITY_OPTIONS } from './shared/fields';
 import { SMARTSCHOOL_ERROR_CODES } from './shared/errorCodes';
 
 type SupportedResource =
@@ -643,10 +644,7 @@ export class SmartSchool implements INodeType {
 				displayName: 'Group Visibility',
 				name: 'groupVisibility',
 				type: 'options',
-				options: [
-					{ name: 'Visible', value: 1 },
-					{ name: 'Hidden', value: 0 },
-				],
+				options: VISIBILITY_OPTIONS,
 				default: 1,
 				description: 'Visibility status for the group/class',
 				displayOptions: {
@@ -920,10 +918,7 @@ export class SmartSchool implements INodeType {
 				displayName: 'Visibility',
 				name: 'courseVisibility',
 				type: 'options',
-				options: [
-					{ name: 'Visible', value: 1 },
-					{ name: 'Hidden', value: 0 },
-				],
+				options: VISIBILITY_OPTIONS,
 				default: 1,
 				description: 'Course visibility status',
 				displayOptions: {
@@ -1214,16 +1209,7 @@ export class SmartSchool implements INodeType {
 				default: 'actief',
 				required: true,
 				description: 'SmartSchool account status',
-				options: [
-					{ name: 'Active (actief)', value: 'actief' },
-					{ name: 'Active (active)', value: 'active' },
-					{ name: 'Active (enabled)', value: 'enabled' },
-					{ name: 'Inactive (inactief)', value: 'inactief' },
-					{ name: 'Inactive (inactive)', value: 'inactive' },
-					{ name: 'Inactive (disabled)', value: 'disabled' },
-					{ name: 'Administrative (administrative)', value: 'administrative' },
-					{ name: 'Administrative (administratief)', value: 'administratief' },
-				],
+				options: ACCOUNT_STATUS_OPTIONS,
 				displayOptions: {
 					show: {
 						resource: ['account'],

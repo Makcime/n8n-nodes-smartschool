@@ -4,6 +4,7 @@ exports.SmartSchool = void 0;
 const n8n_workflow_1 = require("n8n-workflow");
 const smartschool_kit_1 = require("@abrianto/smartschool-kit");
 const GenericFunctions_1 = require("./GenericFunctions");
+const fields_1 = require("./shared/fields");
 const errorCodes_1 = require("./shared/errorCodes");
 class SmartSchool {
     constructor() {
@@ -569,10 +570,7 @@ class SmartSchool {
                     displayName: 'Group Visibility',
                     name: 'groupVisibility',
                     type: 'options',
-                    options: [
-                        { name: 'Visible', value: 1 },
-                        { name: 'Hidden', value: 0 },
-                    ],
+                    options: fields_1.VISIBILITY_OPTIONS,
                     default: 1,
                     description: 'Visibility status for the group/class',
                     displayOptions: {
@@ -846,10 +844,7 @@ class SmartSchool {
                     displayName: 'Visibility',
                     name: 'courseVisibility',
                     type: 'options',
-                    options: [
-                        { name: 'Visible', value: 1 },
-                        { name: 'Hidden', value: 0 },
-                    ],
+                    options: fields_1.VISIBILITY_OPTIONS,
                     default: 1,
                     description: 'Course visibility status',
                     displayOptions: {
@@ -1139,16 +1134,7 @@ class SmartSchool {
                     default: 'actief',
                     required: true,
                     description: 'SmartSchool account status',
-                    options: [
-                        { name: 'Active (actief)', value: 'actief' },
-                        { name: 'Active (active)', value: 'active' },
-                        { name: 'Active (enabled)', value: 'enabled' },
-                        { name: 'Inactive (inactief)', value: 'inactief' },
-                        { name: 'Inactive (inactive)', value: 'inactive' },
-                        { name: 'Inactive (disabled)', value: 'disabled' },
-                        { name: 'Administrative (administrative)', value: 'administrative' },
-                        { name: 'Administrative (administratief)', value: 'administratief' },
-                    ],
+                    options: fields_1.ACCOUNT_STATUS_OPTIONS,
                     displayOptions: {
                         show: {
                             resource: ['account'],

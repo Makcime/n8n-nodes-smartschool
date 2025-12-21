@@ -25,6 +25,7 @@
         "lint": "n8n-node lint",
         "lint:fix": "n8n-node lint --fix",
         "release": "n8n-node release",
+        "test": "vitest run",
         "prepublishOnly": "n8n-node prerelease"
     },
     "files": [
@@ -41,16 +42,19 @@
         ]
     },
     "devDependencies": {
+        "@types/node": "24.3.1",
         "@n8n/node-cli": "*",
         "eslint": "9.32.0",
         "prettier": "3.6.2",
         "release-it": "^19.0.4",
-        "typescript": "5.9.2"
+        "typescript": "5.9.2",
+        "vitest": "3.2.4"
     },
     "peerDependencies": {
         "n8n-workflow": "*"
     },
     "dependencies": {
-        "@abrianto/smartschool-kit": "0.0.13"
+        "@abrianto/smartschool-kit": "0.0.13",
+        "zod": "4.0.8"
     }
 }
