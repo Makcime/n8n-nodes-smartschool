@@ -17,6 +17,18 @@ type SupportedOperation =
 	| 'getClassList'
 	| 'getClassListJson'
 	| 'getClassTeachers'
+	| 'saveGroup'
+	| 'saveClass'
+	| 'saveUserToGroup'
+	| 'removeUserFromGroup'
+	| 'delClass'
+	| 'saveClassList'
+	| 'saveClassListJson'
+	| 'getSchoolyearDataOfClass'
+	| 'saveSchoolyearDataOfClass'
+	| 'getSkoreClassTeacherCourseRelation'
+	| 'clearGroup'
+	| 'unregisterStudent'
 	| 'getHelpdeskMiniDbItems'
 	| 'addHelpdeskTicket'
 	| 'sendMsg'
@@ -316,6 +328,78 @@ export class SmartSchool implements INodeType {
 						description: 'List titular teachers per class',
 						action: 'Get class teachers',
 					},
+					{
+						name: 'Save Group',
+						value: 'saveGroup',
+						description: 'Create or update a group',
+						action: 'Save group',
+					},
+					{
+						name: 'Save Class',
+						value: 'saveClass',
+						description: 'Create or update a class',
+						action: 'Save class',
+					},
+					{
+						name: 'Save User to Group',
+						value: 'saveUserToGroup',
+						description: 'Assign a user to a class or group',
+						action: 'Save user to group',
+					},
+					{
+						name: 'Remove User from Group',
+						value: 'removeUserFromGroup',
+						description: 'Remove a user from a class or group',
+						action: 'Remove user from group',
+					},
+					{
+						name: 'Delete Class',
+						value: 'delClass',
+						description: 'Delete a class or group',
+						action: 'Delete class',
+					},
+					{
+						name: 'Save Class List (CSV)',
+						value: 'saveClassList',
+						description: 'Bulk update class list from CSV',
+						action: 'Save class list csv',
+					},
+					{
+						name: 'Save Class List (JSON)',
+						value: 'saveClassListJson',
+						description: 'Bulk update class list from JSON',
+						action: 'Save class list json',
+					},
+					{
+						name: 'Get Schoolyear Data of Class',
+						value: 'getSchoolyearDataOfClass',
+						description: 'Retrieve schoolyear metadata for a class',
+						action: 'Get schoolyear data of class',
+					},
+					{
+						name: 'Save Schoolyear Data of Class',
+						value: 'saveSchoolyearDataOfClass',
+						description: 'Update schoolyear metadata for a class',
+						action: 'Save schoolyear data of class',
+					},
+					{
+						name: 'Get Skore Class Teacher Course Relation',
+						value: 'getSkoreClassTeacherCourseRelation',
+						description: 'Retrieve Skore class-teacher-course relations',
+						action: 'Get skore class teacher course relation',
+					},
+					{
+						name: 'Clear Group',
+						value: 'clearGroup',
+						description: 'Remove all users from a group',
+						action: 'Clear group',
+					},
+					{
+						name: 'Unregister Student',
+						value: 'unregisterStudent',
+						description: 'Unregister a student from all groups',
+						action: 'Unregister student',
+					},
 				],
 			},
 			{
@@ -398,6 +482,7 @@ export class SmartSchool implements INodeType {
 							'getAllAccounts',
 							'getAllAccountsExtended',
 							'getAbsentsByDateAndGroup',
+							'clearGroup',
 						],
 					},
 				},
@@ -426,6 +511,224 @@ export class SmartSchool implements INodeType {
 					show: {
 						resource: ['group'],
 						operation: ['getClassTeachers'],
+					},
+				},
+			},
+			{
+				displayName: 'Group/Class Details',
+				name: 'groupClassDetails',
+				type: 'fixedCollection',
+				default: {},
+				description: 'Details for creating or updating a class or group',
+				displayOptions: {
+					show: {
+						resource: ['group'],
+						operation: ['saveGroup', 'saveClass'],
+					},
+				},
+				options: [
+					{
+						displayName: 'Required',
+						name: 'required',
+						values: [
+							{
+								displayName: 'Name',
+								name: 'name',
+								type: 'string',
+								default: '',
+								required: true,
+							},
+							{
+								displayName: 'Description',
+								name: 'desc',
+								type: 'string',
+								default: '',
+								required: true,
+							},
+							{
+								displayName: 'Code',
+								name: 'code',
+								type: 'string',
+								default: '',
+								required: true,
+							},
+							{
+								displayName: 'Parent Code',
+								name: 'parent',
+								type: 'string',
+								default: '',
+								required: true,
+							},
+							{
+								displayName: 'Untis Code',
+								name: 'untis',
+								type: 'string',
+								default: '',
+								required: true,
+							},
+						],
+					},
+					{
+						displayName: 'Optional (Classes only)',
+						name: 'optional',
+						values: [
+							{
+								displayName: 'Institute Number',
+								name: 'instituteNumber',
+								type: 'string',
+								default: '',
+							},
+							{
+								displayName: 'Administrative Number',
+								name: 'adminNumber',
+								type: 'string',
+								default: '',
+							},
+							{
+								displayName: 'School Year Date',
+								name: 'schoolYearDate',
+								type: 'string',
+								default: '',
+							},
+						],
+					},
+				],
+			},
+			{
+				displayName: 'Class/Group Code',
+				name: 'classCode',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Class or group code',
+				displayOptions: {
+					show: {
+						resource: ['group'],
+						operation: [
+							'saveUserToGroup',
+							'removeUserFromGroup',
+							'delClass',
+							'getSchoolyearDataOfClass',
+							'saveSchoolyearDataOfClass',
+						],
+					},
+				},
+			},
+			{
+				displayName: 'Class List (CSV)',
+				name: 'classListCsv',
+				type: 'string',
+				typeOptions: {
+					rows: 6,
+				},
+				default: '',
+				required: true,
+				description: 'Serialized CSV list of classes',
+				displayOptions: {
+					show: {
+						resource: ['group'],
+						operation: ['saveClassList'],
+					},
+				},
+			},
+			{
+				displayName: 'Class List (JSON)',
+				name: 'classListJson',
+				type: 'string',
+				typeOptions: {
+					rows: 6,
+				},
+				default: '',
+				required: true,
+				description: 'Serialized JSON list of classes',
+				displayOptions: {
+					show: {
+						resource: ['group'],
+						operation: ['saveClassListJson'],
+					},
+				},
+			},
+			{
+				displayName: 'School Year Date',
+				name: 'schoolyearDate',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'School year date (YYYY-MM-DD)',
+				displayOptions: {
+					show: {
+						resource: ['group'],
+						operation: ['saveSchoolyearDataOfClass'],
+					},
+				},
+			},
+			{
+				displayName: 'Institute Number',
+				name: 'schoolyearInstituteNumber',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Institute number for the school year data',
+				displayOptions: {
+					show: {
+						resource: ['group'],
+						operation: ['saveSchoolyearDataOfClass'],
+					},
+				},
+			},
+			{
+				displayName: 'Administrative Group Number',
+				name: 'administrativeGroupNumber',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Administrative group number',
+				displayOptions: {
+					show: {
+						resource: ['group'],
+						operation: ['saveSchoolyearDataOfClass'],
+					},
+				},
+			},
+			{
+				displayName: 'Residence',
+				name: 'residence',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Residence location',
+				displayOptions: {
+					show: {
+						resource: ['group'],
+						operation: ['saveSchoolyearDataOfClass'],
+					},
+				},
+			},
+			{
+				displayName: 'Domain',
+				name: 'domain',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Domain of study',
+				displayOptions: {
+					show: {
+						resource: ['group'],
+						operation: ['saveSchoolyearDataOfClass'],
+					},
+				},
+			},
+			{
+				displayName: 'Principal',
+				name: 'principal',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Principal name or identifier',
+				displayOptions: {
+					show: {
+						resource: ['group'],
+						operation: ['saveSchoolyearDataOfClass'],
 					},
 				},
 			},
@@ -567,6 +870,9 @@ export class SmartSchool implements INodeType {
 							'saveUserParameter',
 							'removeCoAccount',
 							'savePassword',
+							'saveUserToGroup',
+							'removeUserFromGroup',
+							'unregisterStudent',
 						],
 					},
 				},
@@ -760,8 +1066,14 @@ export class SmartSchool implements INodeType {
 				description: 'Date to apply the change (YYYY-MM-DD)',
 				displayOptions: {
 					show: {
-						resource: ['account'],
-						operation: ['delUser'],
+						resource: ['account', 'group'],
+						operation: [
+							'delUser',
+							'saveUserToGroup',
+							'removeUserFromGroup',
+							'clearGroup',
+							'unregisterStudent',
+						],
 					},
 				},
 			},
@@ -1159,6 +1471,201 @@ export class SmartSchool implements INodeType {
 							getAllOwners,
 						});
 						normalizeAndPush(response);
+						continue;
+					}
+
+					if (operation === 'saveGroup' || operation === 'saveClass') {
+						const details = this.getNodeParameter('groupClassDetails', itemIndex, {}) as IDataObject;
+						const required = (details.required ?? {}) as IDataObject;
+						const optional = (details.optional ?? {}) as IDataObject;
+
+						const payload: IDataObject = {
+							accesscode,
+							name: required.name as string,
+							desc: required.desc as string,
+							code: required.code as string,
+							parent: required.parent as string,
+							untis: required.untis as string,
+						};
+
+						if (operation === 'saveClass') {
+							if (optional.instituteNumber) {
+								payload.instituteNumber = optional.instituteNumber;
+							}
+							if (optional.adminNumber) {
+								payload.adminNumber = optional.adminNumber;
+							}
+							if (optional.schoolYearDate) {
+								payload.schoolYearDate = optional.schoolYearDate;
+							}
+						}
+
+						const response =
+							operation === 'saveGroup'
+								? await client.saveGroup(payload as never)
+								: await client.saveClass(payload as never);
+
+						returnData.push({
+							json: { success: response },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'saveUserToGroup') {
+						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
+						const classCode = this.getNodeParameter('classCode', itemIndex) as string;
+						const officialDate = this.getNodeParameter('officialDate', itemIndex, '') as string;
+						const payload: IDataObject = {
+							accesscode,
+							userIdentifier,
+							class: classCode,
+						};
+						if (officialDate) {
+							payload.officialDate = officialDate;
+						}
+						const response = await client.saveUserToClass(payload as never);
+						returnData.push({
+							json: { success: response },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'removeUserFromGroup') {
+						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
+						const classCode = this.getNodeParameter('classCode', itemIndex) as string;
+						const officialDate = this.getNodeParameter('officialDate', itemIndex, '') as string;
+						const payload: IDataObject = {
+							accesscode,
+							userIdentifier,
+							class: classCode,
+						};
+						if (officialDate) {
+							payload.officialDate = officialDate;
+						}
+						const response = await client.removeUserFromGroup(payload as never);
+						returnData.push({
+							json: { success: response },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'delClass') {
+						const classCode = this.getNodeParameter('classCode', itemIndex) as string;
+						const response = await client.delClass({
+							accesscode,
+							code: classCode,
+						});
+						returnData.push({
+							json: { success: response },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'saveClassList') {
+						const serializedList = this.getNodeParameter('classListCsv', itemIndex) as string;
+						const response = await client.saveClassList({
+							accesscode,
+							serializedList,
+						});
+						normalizeAndPush(response);
+						continue;
+					}
+
+					if (operation === 'saveClassListJson') {
+						const jsonList = this.getNodeParameter('classListJson', itemIndex) as string;
+						const response = await client.saveClassListJson({
+							accesscode,
+							jsonList,
+						});
+						normalizeAndPush(response);
+						continue;
+					}
+
+					if (operation === 'getSchoolyearDataOfClass') {
+						const classCode = this.getNodeParameter('classCode', itemIndex) as string;
+						const response = await client.getSchoolyearDataOfClass({
+							accesscode,
+							classCode,
+						});
+						normalizeAndPush(response);
+						continue;
+					}
+
+					if (operation === 'saveSchoolyearDataOfClass') {
+						const classCode = this.getNodeParameter('classCode', itemIndex) as string;
+						const date = this.getNodeParameter('schoolyearDate', itemIndex) as string;
+						const instituteNumber = this.getNodeParameter(
+							'schoolyearInstituteNumber',
+							itemIndex,
+						) as string;
+						const administrativeGroupNumber = this.getNodeParameter(
+							'administrativeGroupNumber',
+							itemIndex,
+						) as string;
+						const residence = this.getNodeParameter('residence', itemIndex) as string;
+						const domain = this.getNodeParameter('domain', itemIndex) as string;
+						const principal = this.getNodeParameter('principal', itemIndex) as string;
+
+						const response = await client.saveSchoolyearDataOfClass({
+							accesscode,
+							classCode,
+							date,
+							instituteNumber,
+							administrativeGroupNumber,
+							residence,
+							domain,
+							principal,
+						});
+						returnData.push({
+							json: { success: response },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'getSkoreClassTeacherCourseRelation') {
+						const response = await client.getSkoreClassTeacherCourseRelation();
+						normalizeAndPush(response);
+						continue;
+					}
+
+					if (operation === 'clearGroup') {
+						const groupCode = this.getNodeParameter('code', itemIndex) as string;
+						const officialDate = this.getNodeParameter('officialDate', itemIndex, '') as string;
+						const payload: IDataObject = {
+							accesscode,
+							group: groupCode,
+						};
+						if (officialDate) {
+							payload.officialDate = officialDate;
+						}
+						const response = await client.clearGroup(payload as never);
+						returnData.push({
+							json: { success: response },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'unregisterStudent') {
+						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
+						const officialDate = this.getNodeParameter('officialDate', itemIndex, '') as string;
+						const payload: IDataObject = {
+							accesscode,
+							userIdentifier,
+						};
+						if (officialDate) {
+							payload.officialDate = officialDate;
+						}
+						const response = await client.unregisterStudent(payload as never);
+						returnData.push({
+							json: { success: response },
+							pairedItem: { item: itemIndex },
+						});
 						continue;
 					}
 				}

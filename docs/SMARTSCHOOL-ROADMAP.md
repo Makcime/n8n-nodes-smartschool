@@ -33,7 +33,7 @@ Below is the proposed mapping (✅ = implemented, ⏳ = in progress, ⛳ = plann
 | Bucket | Operations | Status |
 | --- | --- | --- |
 | **Accounts & Users** | getAllAccounts ✅, getAllAccountsExtended ✅, getUserDetails ✅, getUserDetailsByNumber ✅, getUserDetailsByUsername ✅, getUserDetailsByScannableCode ✅, getUserOfficialClass ✅, saveUser ✅, delUser ✅, setAccountStatus ✅, changeUsername ✅, changeInternNumber ✅, changePasswordAtNextLogin ✅, forcePasswordReset ✅, replaceInum ✅, saveUserParameter ✅, removeCoAccount ✅, savePassword ✅ | ⛳ |
-| **Groups & Classes** | getAllGroupsAndClasses ✅, getClassList ✅, getClassListJson ✅, getClassTeachers ✅, saveGroup, saveClass, saveUserToGroup, removeUserFromGroup, delClass, saveClassList, saveClassListJson, getSchoolyearDataOfClass, saveSchoolyearDataOfClass, getSkoreClassTeacherCourseRelation, clearGroup, unregisterStudent | ⛳ |
+| **Groups & Classes** | getAllGroupsAndClasses ✅, getClassList ✅, getClassListJson ✅, getClassTeachers ✅, saveGroup ✅, saveClass ✅, saveUserToGroup ✅, removeUserFromGroup ✅, delClass ✅, saveClassList ✅, saveClassListJson ✅, getSchoolyearDataOfClass ✅, saveSchoolyearDataOfClass ✅, getSkoreClassTeacherCourseRelation ✅, clearGroup ✅, unregisterStudent ✅ | ⛳ |
 | **Absences** | getAbsents ✅, getAbsentsWithAlias ✅, getAbsentsByDate ✅, getAbsentsWithAliasByDate ✅, getAbsentsWithInternalNumberByDate ✅, getAbsentsWithUsernameByDate ✅, getAbsentsByDateAndGroup ✅ | ⛳ |
 | **Messages** | sendMsg, saveSignature | ⛳ |
 | **Courses** | addCourse, addCourseStudents, addCourseTeacher, getCourses | ⛳ |
@@ -69,7 +69,7 @@ We will work resource-by-resource. Each row should end up in git history as its 
 #### Milestone 3 – Mutation Suite
 
 - [x] Users: `saveUser`, `delUser`, status/password helpers  
-- [ ] Groups/Classes: create/update/delete + membership adjustments  
+- [x] Groups/Classes: create/update/delete + membership adjustments  
 - [ ] Courses: `addCourse`, `addCourseStudents`, `addCourseTeacher`  
 - [ ] Helpdesk: ticket creation  
 - [ ] Messaging: `sendMsg`, `saveSignature` (may go into dedicated node)  
@@ -117,7 +117,8 @@ Use this table to keep status visible. Update `Status` column as work proceeds.
 | Accounts detail operations | ✅ | Read + mutation operations available |
 | Helpdesk endpoints (list/create) | ✅ | `getHelpdeskMiniDbItems` + `addHelpdeskTicket` in SmartSchool node |
 | Messaging (sendMsg) | ✅ | Send SmartSchool messages incl. optional attachments |
-| Absence endpoints | ⛳ | Not started |
+| Groups & classes mutations | ✅ | Group/class CRUD + membership operations added |
+| Absence endpoints | ✅ | Full absence suite implemented |
 | Mutation node scaffold | ⛳ | Not started |
 | Messaging node | ⛳ | Not started |
 
