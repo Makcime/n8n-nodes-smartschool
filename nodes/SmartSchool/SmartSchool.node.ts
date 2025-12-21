@@ -47,6 +47,7 @@ type SupportedOperation =
 	| 'getHelpdeskMiniDbItems'
 	| 'addHelpdeskTicket'
 	| 'sendMsg'
+	| 'saveSignature'
 	| 'getUserDetails'
 	| 'getUserDetailsByNumber'
 	| 'getUserDetailsByUsername'
@@ -532,6 +533,12 @@ export class SmartSchool implements INodeType {
 						value: 'sendMsg',
 						description: 'Send a SmartSchool message to a user or co-account',
 						action: 'Send SmartSchool message',
+					},
+					{
+						name: 'Save Signature',
+						value: 'saveSignature',
+						description: 'Save a message signature for a user account',
+						action: 'Save signature',
 					},
 				],
 			},
@@ -1039,6 +1046,7 @@ export class SmartSchool implements INodeType {
 						operation: [
 							'addHelpdeskTicket',
 							'sendMsg',
+							'saveSignature',
 							'getUserDetails',
 							'getUserOfficialClass',
 							'getAbsents',
@@ -1179,6 +1187,22 @@ export class SmartSchool implements INodeType {
 					show: {
 						resource: ['account'],
 						operation: ['changePasswordAtNextLogin', 'forcePasswordReset', 'removeCoAccount', 'savePassword'],
+					},
+				},
+			},
+			{
+				displayName: 'Signature Account Type',
+				name: 'signatureAccountType',
+				type: 'number',
+				typeOptions: {
+					minValue: 0,
+				},
+				default: 0,
+				description: '0 = main account, 1 = first co-account, etc.',
+				displayOptions: {
+					show: {
+						resource: ['message'],
+						operation: ['saveSignature'],
 					},
 				},
 			},
@@ -1475,20 +1499,37 @@ export class SmartSchool implements INodeType {
 					},
 				],
 			},
-				{
-					displayName: 'Sender Identifier',
-					name: 'senderIdentifier',
-					type: 'string',
-					default: '',
-					required: true,
-					description: 'Identifier of the account sending the message (use "Null" to hide sender)',
-					displayOptions: {
-						show: {
-							resource: ['message'],
-							operation: ['sendMsg'],
-						},
+			{
+				displayName: 'Sender Identifier',
+				name: 'senderIdentifier',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Identifier of the account sending the message (use "Null" to hide sender)',
+				displayOptions: {
+					show: {
+						resource: ['message'],
+						operation: ['sendMsg'],
 					},
 				},
+			},
+			{
+				displayName: 'Signature',
+				name: 'signature',
+				type: 'string',
+				typeOptions: {
+					rows: 4,
+				},
+				default: '',
+				required: true,
+				description: 'Signature text to save',
+				displayOptions: {
+					show: {
+						resource: ['message'],
+						operation: ['saveSignature'],
+					},
+				},
+			},
 				{
 					displayName: 'Send to Co-Account',
 					name: 'coaccount',
@@ -2330,6 +2371,23 @@ export class SmartSchool implements INodeType {
 						pairedItem: { item: itemIndex },
 					});
 
+					continue;
+				}
+
+				if (resource === 'message' && operation === 'saveSignature') {
+					const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
+					const signature = this.getNodeParameter('signature', itemIndex) as string;
+					const accountType = this.getNodeParameter('signatureAccountType', itemIndex) as number;
+					const response = await client.saveSignature({
+						accesscode,
+						userIdentifier,
+						accountType,
+						signature,
+					});
+					returnData.push({
+						json: { success: response },
+						pairedItem: { item: itemIndex },
+					});
 					continue;
 				}
 

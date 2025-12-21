@@ -465,6 +465,12 @@ class SmartSchool {
                             description: 'Send a SmartSchool message to a user or co-account',
                             action: 'Send SmartSchool message',
                         },
+                        {
+                            name: 'Save Signature',
+                            value: 'saveSignature',
+                            description: 'Save a message signature for a user account',
+                            action: 'Save signature',
+                        },
                     ],
                 },
                 {
@@ -969,6 +975,7 @@ class SmartSchool {
                             operation: [
                                 'addHelpdeskTicket',
                                 'sendMsg',
+                                'saveSignature',
                                 'getUserDetails',
                                 'getUserOfficialClass',
                                 'getAbsents',
@@ -1109,6 +1116,22 @@ class SmartSchool {
                         show: {
                             resource: ['account'],
                             operation: ['changePasswordAtNextLogin', 'forcePasswordReset', 'removeCoAccount', 'savePassword'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Signature Account Type',
+                    name: 'signatureAccountType',
+                    type: 'number',
+                    typeOptions: {
+                        minValue: 0,
+                    },
+                    default: 0,
+                    description: '0 = main account, 1 = first co-account, etc.',
+                    displayOptions: {
+                        show: {
+                            resource: ['message'],
+                            operation: ['saveSignature'],
                         },
                     },
                 },
@@ -1416,6 +1439,23 @@ class SmartSchool {
                         show: {
                             resource: ['message'],
                             operation: ['sendMsg'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Signature',
+                    name: 'signature',
+                    type: 'string',
+                    typeOptions: {
+                        rows: 4,
+                    },
+                    default: '',
+                    required: true,
+                    description: 'Signature text to save',
+                    displayOptions: {
+                        show: {
+                            resource: ['message'],
+                            operation: ['saveSignature'],
                         },
                     },
                 },
@@ -2163,6 +2203,22 @@ class SmartSchool {
                         payload.attachments = cleanedAttachments;
                     }
                     const response = await client.sendMsg(payload);
+                    returnData.push({
+                        json: { success: response },
+                        pairedItem: { item: itemIndex },
+                    });
+                    continue;
+                }
+                if (resource === 'message' && operation === 'saveSignature') {
+                    const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
+                    const signature = this.getNodeParameter('signature', itemIndex);
+                    const accountType = this.getNodeParameter('signatureAccountType', itemIndex);
+                    const response = await client.saveSignature({
+                        accesscode,
+                        userIdentifier,
+                        accountType,
+                        signature,
+                    });
                     returnData.push({
                         json: { success: response },
                         pairedItem: { item: itemIndex },
