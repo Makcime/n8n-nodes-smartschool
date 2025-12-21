@@ -39,7 +39,8 @@ Below is the proposed mapping (✅ = implemented, ⏳ = in progress, ⛳ = plann
 | **Courses** | addCourse ✅, addCourseStudents ✅, addCourseTeacher ✅, getCourses ✅ | ⛳ |
 | **Helpdesk** | addHelpdeskTicket, getHelpdeskMiniDbItems | ⛳ |
 | **Parameters** | getReferenceField ✅, returnCsvErrorCodes, returnJsonErrorCodes | ⛳ |
-| **System** | startSkoreSync, checkStatus | ⛳ |
+| **System** | startSkoreSync ✅, checkStatus ✅ | ⛳ |
+| **Student Career** | getStudentCareer ✅ | ⛳ |
 | **Deprecated** | deactivateTwoFactorAuthentication (skip, doc-only) | ❌ |
 
 ---
@@ -76,8 +77,8 @@ We will work resource-by-resource. Each row should end up in git history as its 
 
 #### Milestone 4 – Advanced
 
-- [ ] Start/monitor Skore sync  
-- [ ] Student career endpoints  
+- [x] Start/monitor Skore sync  
+- [x] Student career endpoints  
 - [ ] Optional triggers/webhooks once API coverage confirmed  
 - [ ] Documentation refresh + sample workflows  
 

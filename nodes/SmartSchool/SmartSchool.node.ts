@@ -9,7 +9,15 @@ import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 import { getSmartSchoolClient } from './GenericFunctions';
 
-type SupportedResource = 'group' | 'helpdesk' | 'message' | 'account' | 'parameter' | 'absence' | 'course';
+type SupportedResource =
+	| 'group'
+	| 'helpdesk'
+	| 'message'
+	| 'account'
+	| 'parameter'
+	| 'absence'
+	| 'course'
+	| 'system';
 type SupportedOperation =
 	| 'getAllAccounts'
 	| 'getAllAccountsExtended'
@@ -33,6 +41,9 @@ type SupportedOperation =
 	| 'addCourseStudents'
 	| 'addCourseTeacher'
 	| 'getCourses'
+	| 'startSkoreSync'
+	| 'checkStatus'
+	| 'getStudentCareer'
 	| 'getHelpdeskMiniDbItems'
 	| 'addHelpdeskTicket'
 	| 'sendMsg'
@@ -119,6 +130,10 @@ export class SmartSchool implements INodeType {
 					{
 						name: 'Course',
 						value: 'course',
+					},
+					{
+						name: 'System',
+						value: 'system',
 					},
 				],
 			},
@@ -323,6 +338,38 @@ export class SmartSchool implements INodeType {
 						value: 'addCourseTeacher',
 						description: 'Assign a teacher to a course',
 						action: 'Add course teacher',
+					},
+				],
+			},
+			{
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				default: 'startSkoreSync',
+				displayOptions: {
+					show: {
+						resource: ['system'],
+					},
+				},
+				options: [
+					{
+						name: 'Start Skore Sync',
+						value: 'startSkoreSync',
+						description: 'Start the Skore sync process',
+						action: 'Start skore sync',
+					},
+					{
+						name: 'Check Status',
+						value: 'checkStatus',
+						description: 'Check Skore sync status',
+						action: 'Check status',
+					},
+					{
+						name: 'Get Student Career',
+						value: 'getStudentCareer',
+						description: 'Retrieve student career history',
+						action: 'Get student career',
 					},
 				],
 			},
@@ -866,6 +913,20 @@ export class SmartSchool implements INodeType {
 				},
 			},
 			{
+				displayName: 'Service ID',
+				name: 'serviceId',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Service identifier returned by Start Skore Sync',
+				displayOptions: {
+					show: {
+						resource: ['system'],
+						operation: ['checkStatus'],
+					},
+				},
+			},
+			{
 				displayName: 'Absence Date',
 				name: 'absenceDate',
 				type: 'string',
@@ -974,7 +1035,7 @@ export class SmartSchool implements INodeType {
 				description: 'Username or identifier of the ticket creator, recipient, or lookup target',
 				displayOptions: {
 					show: {
-						resource: ['helpdesk', 'message', 'account', 'absence', 'course'],
+						resource: ['helpdesk', 'message', 'account', 'absence', 'course', 'system'],
 						operation: [
 							'addHelpdeskTicket',
 							'sendMsg',
@@ -993,6 +1054,7 @@ export class SmartSchool implements INodeType {
 							'removeUserFromGroup',
 							'unregisterStudent',
 							'addCourseTeacher',
+							'getStudentCareer',
 						],
 					},
 				},
@@ -2156,6 +2218,28 @@ export class SmartSchool implements INodeType {
 							json: { success: response },
 							pairedItem: { item: itemIndex },
 						});
+						continue;
+					}
+				}
+
+				if (resource === 'system') {
+					if (operation === 'startSkoreSync') {
+						const response = await client.startSkoreSync();
+						normalizeAndPush(response);
+						continue;
+					}
+
+					if (operation === 'checkStatus') {
+						const serviceId = this.getNodeParameter('serviceId', itemIndex) as string;
+						const response = await client.checkStatus({ accesscode, serviceId });
+						normalizeAndPush(response);
+						continue;
+					}
+
+					if (operation === 'getStudentCareer') {
+						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
+						const response = await client.getStudentCareer({ accesscode, userIdentifier });
+						normalizeAndPush(response);
 						continue;
 					}
 				}
