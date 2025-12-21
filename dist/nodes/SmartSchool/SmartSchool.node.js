@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SmartSchool = void 0;
 const n8n_workflow_1 = require("n8n-workflow");
-const smartschool_kit_1 = require("@abrianto/smartschool-kit");
 const GenericFunctions_1 = require("./GenericFunctions");
 const fields_1 = require("./shared/fields");
 const errorCodes_1 = require("./shared/errorCodes");
@@ -39,6 +38,18 @@ class SmartSchool {
                     default: 'group',
                     options: [
                         {
+                            name: 'Absence',
+                            value: 'absence',
+                        },
+                        {
+                            name: 'Account',
+                            value: 'account',
+                        },
+                        {
+                            name: 'Course',
+                            value: 'course',
+                        },
+                        {
                             name: 'Group',
                             value: 'group',
                         },
@@ -51,20 +62,8 @@ class SmartSchool {
                             value: 'message',
                         },
                         {
-                            name: 'Account',
-                            value: 'account',
-                        },
-                        {
                             name: 'Parameter',
                             value: 'parameter',
-                        },
-                        {
-                            name: 'Absence',
-                            value: 'absence',
-                        },
-                        {
-                            name: 'Course',
-                            value: 'course',
                         },
                         {
                             name: 'System',
@@ -85,60 +84,6 @@ class SmartSchool {
                     },
                     options: [
                         {
-                            name: 'Get User Details',
-                            value: 'getUserDetails',
-                            description: 'Get user details by SmartSchool identifier',
-                            action: 'Get user details',
-                        },
-                        {
-                            name: 'Get User Details by Number',
-                            value: 'getUserDetailsByNumber',
-                            description: 'Get user details by internal number',
-                            action: 'Get user details by number',
-                        },
-                        {
-                            name: 'Get User Details by Username',
-                            value: 'getUserDetailsByUsername',
-                            description: 'Get user details by username',
-                            action: 'Get user details by username',
-                        },
-                        {
-                            name: 'Get User Details by Scannable Code',
-                            value: 'getUserDetailsByScannableCode',
-                            description: 'Get user details by scannable code',
-                            action: 'Get user details by scannable code',
-                        },
-                        {
-                            name: 'Get User Official Class',
-                            value: 'getUserOfficialClass',
-                            description: 'Retrieve the official class for a user',
-                            action: 'Get user official class',
-                        },
-                        {
-                            name: 'Save User',
-                            value: 'saveUser',
-                            description: 'Create or update a SmartSchool user',
-                            action: 'Save user',
-                        },
-                        {
-                            name: 'Delete User',
-                            value: 'delUser',
-                            description: 'Remove a user from SmartSchool',
-                            action: 'Delete user',
-                        },
-                        {
-                            name: 'Set Account Status',
-                            value: 'setAccountStatus',
-                            description: 'Activate, deactivate, or set account status',
-                            action: 'Set account status',
-                        },
-                        {
-                            name: 'Change Username',
-                            value: 'changeUsername',
-                            description: 'Change a username using the internal number',
-                            action: 'Change username',
-                        },
-                        {
                             name: 'Change Internal Number',
                             value: 'changeInternNumber',
                             description: 'Change the internal number for a user',
@@ -151,10 +96,62 @@ class SmartSchool {
                             action: 'Change password at next login',
                         },
                         {
+                            name: 'Change Username',
+                            value: 'changeUsername',
+                            description: 'Change a username using the internal number',
+                            action: 'Change username',
+                        },
+                        {
+                            name: 'Deactivate Two-Factor Authentication',
+                            value: 'deactivateTwoFactorAuthentication',
+                            description: 'Deprecated SmartSchool method to disable 2FA',
+                            action: 'Deactivate two factor authentication',
+                        },
+                        {
+                            name: 'Delete User',
+                            value: 'delUser',
+                            description: 'Remove a user from SmartSchool',
+                            action: 'Delete user',
+                        },
+                        {
                             name: 'Force Password Reset',
                             value: 'forcePasswordReset',
                             description: 'Force a password reset for a user account',
                             action: 'Force password reset',
+                        },
+                        {
+                            name: 'Get User Details',
+                            value: 'getUserDetails',
+                            description: 'Get user details by SmartSchool identifier',
+                            action: 'Get user details',
+                        },
+                        {
+                            name: 'Get User Details by Number',
+                            value: 'getUserDetailsByNumber',
+                            description: 'Get user details by internal number',
+                            action: 'Get user details by number',
+                        },
+                        {
+                            name: 'Get User Details by Scannable Code',
+                            value: 'getUserDetailsByScannableCode',
+                            action: 'Get user details by scannable code',
+                        },
+                        {
+                            name: 'Get User Details by Username',
+                            value: 'getUserDetailsByUsername',
+                            action: 'Get user details by username',
+                        },
+                        {
+                            name: 'Get User Official Class',
+                            value: 'getUserOfficialClass',
+                            description: 'Retrieve the official class for a user',
+                            action: 'Get user official class',
+                        },
+                        {
+                            name: 'Remove Co-Account',
+                            value: 'removeCoAccount',
+                            description: 'Remove a co-account from a user',
+                            action: 'Remove co account',
                         },
                         {
                             name: 'Replace Internal Number',
@@ -163,28 +160,28 @@ class SmartSchool {
                             action: 'Replace internal number',
                         },
                         {
-                            name: 'Save User Parameter',
-                            value: 'saveUserParameter',
-                            description: 'Update a SmartSchool user parameter',
-                            action: 'Save user parameter',
-                        },
-                        {
-                            name: 'Remove Co-Account',
-                            value: 'removeCoAccount',
-                            description: 'Remove a co-account from a user',
-                            action: 'Remove co-account',
-                        },
-                        {
                             name: 'Save Password',
                             value: 'savePassword',
                             description: 'Set a new password for a user account',
                             action: 'Save password',
                         },
                         {
-                            name: 'Deactivate Two-Factor Authentication',
-                            value: 'deactivateTwoFactorAuthentication',
-                            description: 'Deprecated SmartSchool method to disable 2FA',
-                            action: 'Deactivate two-factor authentication',
+                            name: 'Save User',
+                            value: 'saveUser',
+                            description: 'Create or update a SmartSchool user',
+                            action: 'Save user',
+                        },
+                        {
+                            name: 'Save User Parameter',
+                            value: 'saveUserParameter',
+                            description: 'Update a SmartSchool user parameter',
+                            action: 'Save user parameter',
+                        },
+                        {
+                            name: 'Set Account Status',
+                            value: 'setAccountStatus',
+                            description: 'Activate, deactivate, or set account status',
+                            action: 'Set account status',
                         },
                     ],
                 },
@@ -207,16 +204,22 @@ class SmartSchool {
                             action: 'Get absents',
                         },
                         {
-                            name: 'Get Absents with Alias',
-                            value: 'getAbsentsWithAlias',
-                            description: 'Get absences with alias labels for a user and school year',
-                            action: 'Get absents with alias',
-                        },
-                        {
                             name: 'Get Absents by Date',
                             value: 'getAbsentsByDate',
                             description: 'Get absences for all students on a date',
                             action: 'Get absents by date',
+                        },
+                        {
+                            name: 'Get Absents by Date and Group',
+                            value: 'getAbsentsByDateAndGroup',
+                            description: 'Get absences for a date filtered by group',
+                            action: 'Get absents by date and group',
+                        },
+                        {
+                            name: 'Get Absents with Alias',
+                            value: 'getAbsentsWithAlias',
+                            description: 'Get absences with alias labels for a user and school year',
+                            action: 'Get absents with alias',
                         },
                         {
                             name: 'Get Absents with Alias by Date',
@@ -235,12 +238,6 @@ class SmartSchool {
                             value: 'getAbsentsWithUsernameByDate',
                             description: 'Get absences indexed by username for a date',
                             action: 'Get absents by username',
-                        },
-                        {
-                            name: 'Get Absents by Date and Group',
-                            value: 'getAbsentsByDateAndGroup',
-                            description: 'Get absences for a date filtered by group',
-                            action: 'Get absents by date and group',
                         },
                     ],
                 },
@@ -333,6 +330,24 @@ class SmartSchool {
                     },
                     options: [
                         {
+                            name: 'Change Group Visibility',
+                            value: 'changeGroupVisibility',
+                            description: 'Toggle visibility of a group or class',
+                            action: 'Change group visibility',
+                        },
+                        {
+                            name: 'Clear Group',
+                            value: 'clearGroup',
+                            description: 'Remove all users from a group',
+                            action: 'Clear group',
+                        },
+                        {
+                            name: 'Delete Class',
+                            value: 'delClass',
+                            description: 'Delete a class or group',
+                            action: 'Delete class',
+                        },
+                        {
                             name: 'Get All Accounts',
                             value: 'getAllAccounts',
                             description: 'List all user accounts from a SmartSchool group',
@@ -369,40 +384,28 @@ class SmartSchool {
                             action: 'Get class teachers',
                         },
                         {
-                            name: 'Change Group Visibility',
-                            value: 'changeGroupVisibility',
-                            description: 'Toggle visibility of a group or class',
-                            action: 'Change group visibility',
+                            name: 'Get Schoolyear Data of Class',
+                            value: 'getSchoolyearDataOfClass',
+                            description: 'Retrieve schoolyear metadata for a class',
+                            action: 'Get schoolyear data of class',
                         },
                         {
-                            name: 'Save Group',
-                            value: 'saveGroup',
-                            description: 'Create or update a group',
-                            action: 'Save group',
+                            name: 'Get Skore Class Teacher Course Relation',
+                            value: 'getSkoreClassTeacherCourseRelation',
+                            description: 'Retrieve Skore class-teacher-course relations',
+                            action: 'Get skore class teacher course relation',
+                        },
+                        {
+                            name: 'Remove User From Group',
+                            value: 'removeUserFromGroup',
+                            description: 'Remove a user from a class or group',
+                            action: 'Remove user from group',
                         },
                         {
                             name: 'Save Class',
                             value: 'saveClass',
                             description: 'Create or update a class',
                             action: 'Save class',
-                        },
-                        {
-                            name: 'Save User to Group',
-                            value: 'saveUserToGroup',
-                            description: 'Assign a user to a class or group',
-                            action: 'Save user to group',
-                        },
-                        {
-                            name: 'Remove User from Group',
-                            value: 'removeUserFromGroup',
-                            description: 'Remove a user from a class or group',
-                            action: 'Remove user from group',
-                        },
-                        {
-                            name: 'Delete Class',
-                            value: 'delClass',
-                            description: 'Delete a class or group',
-                            action: 'Delete class',
                         },
                         {
                             name: 'Save Class List (CSV)',
@@ -417,10 +420,10 @@ class SmartSchool {
                             action: 'Save class list json',
                         },
                         {
-                            name: 'Get Schoolyear Data of Class',
-                            value: 'getSchoolyearDataOfClass',
-                            description: 'Retrieve schoolyear metadata for a class',
-                            action: 'Get schoolyear data of class',
+                            name: 'Save Group',
+                            value: 'saveGroup',
+                            description: 'Create or update a group',
+                            action: 'Save group',
                         },
                         {
                             name: 'Save Schoolyear Data of Class',
@@ -429,16 +432,10 @@ class SmartSchool {
                             action: 'Save schoolyear data of class',
                         },
                         {
-                            name: 'Get Skore Class Teacher Course Relation',
-                            value: 'getSkoreClassTeacherCourseRelation',
-                            description: 'Retrieve Skore class-teacher-course relations',
-                            action: 'Get skore class teacher course relation',
-                        },
-                        {
-                            name: 'Clear Group',
-                            value: 'clearGroup',
-                            description: 'Remove all users from a group',
-                            action: 'Clear group',
+                            name: 'Save User to Group',
+                            value: 'saveUserToGroup',
+                            description: 'Assign a user to a class or group',
+                            action: 'Save user to group',
                         },
                         {
                             name: 'Unregister Student',
@@ -484,7 +481,7 @@ class SmartSchool {
                             name: 'Send Message',
                             value: 'sendMsg',
                             description: 'Send a SmartSchool message to a user or co-account',
-                            action: 'Send SmartSchool message',
+                            action: 'Send smart school message',
                         },
                         {
                             name: 'Save Signature',
@@ -598,8 +595,8 @@ class SmartSchool {
                             name: 'required',
                             values: [
                                 {
-                                    displayName: 'Name',
-                                    name: 'name',
+                                    displayName: 'Code',
+                                    name: 'code',
                                     type: 'string',
                                     default: '',
                                     required: true,
@@ -612,8 +609,8 @@ class SmartSchool {
                                     required: true,
                                 },
                                 {
-                                    displayName: 'Code',
-                                    name: 'code',
+                                    displayName: 'Name',
+                                    name: 'name',
                                     type: 'string',
                                     default: '',
                                     required: true,
@@ -635,7 +632,7 @@ class SmartSchool {
                             ],
                         },
                         {
-                            displayName: 'Optional (Classes only)',
+                            displayName: 'Optional (Classes Only)',
                             name: 'optional',
                             values: [
                                 {
@@ -748,7 +745,6 @@ class SmartSchool {
                     type: 'string',
                     default: '',
                     required: true,
-                    description: 'Administrative group number',
                     displayOptions: {
                         show: {
                             resource: ['group'],
@@ -1091,7 +1087,7 @@ class SmartSchool {
                     name: 'officialClassDate',
                     type: 'string',
                     default: '',
-                    description: 'Date (YYYY-MM-DD). Leave empty to use today',
+                    description: 'Date (YYYY-MM-DD). Leave empty to use today.',
                     displayOptions: {
                         show: {
                             resource: ['account'],
@@ -1150,7 +1146,7 @@ class SmartSchool {
                         minValue: 0,
                     },
                     default: 0,
-                    description: '0 = main account, 1 = first co-account, etc.',
+                    description: '0 = main account, 1 = first co-account, etc',
                     displayOptions: {
                         show: {
                             resource: ['account'],
@@ -1172,7 +1168,7 @@ class SmartSchool {
                         minValue: 0,
                     },
                     default: 0,
-                    description: '0 = main account, 1 = first co-account, etc.',
+                    description: '0 = main account, 1 = first co-account, etc',
                     displayOptions: {
                         show: {
                             resource: ['message'],
@@ -1202,7 +1198,7 @@ class SmartSchool {
                     name: 'mustChangePassword',
                     type: 'boolean',
                     default: false,
-                    description: 'Force the user to change password at next login',
+                    description: 'Whether to force the user to change password at next login',
                     displayOptions: {
                         show: {
                             resource: ['account'],
@@ -1328,10 +1324,10 @@ class SmartSchool {
                                     name: 'basisrol',
                                     type: 'options',
                                     options: [
-                                        { name: 'Student (leerling)', value: 'leerling' },
-                                        { name: 'Teacher (leerkracht)', value: 'leerkracht' },
-                                        { name: 'Management (directie)', value: 'directie' },
-                                        { name: 'Other (andere)', value: 'andere' },
+                                        { name: 'Student (Leerling)', value: 'leerling' },
+                                        { name: 'Teacher (Leerkracht)', value: 'leerkracht' },
+                                        { name: 'Management (Directie)', value: 'directie' },
+                                        { name: 'Other (Andere)', value: 'andere' },
                                     ],
                                     default: 'leerling',
                                     required: true,
@@ -1343,39 +1339,8 @@ class SmartSchool {
                             name: 'optional',
                             values: [
                                 {
-                                    displayName: 'Primary Password',
-                                    name: 'passwd1',
-                                    type: 'string',
-                                    typeOptions: { password: true },
-                                    default: '',
-                                },
-                                {
-                                    displayName: 'Internal Number',
-                                    name: 'internnumber',
-                                    type: 'string',
-                                    default: '',
-                                },
-                                {
-                                    displayName: 'Extra Names',
-                                    name: 'extranames',
-                                    type: 'string',
-                                    default: '',
-                                },
-                                {
-                                    displayName: 'Initials',
-                                    name: 'initials',
-                                    type: 'string',
-                                    default: '',
-                                },
-                                {
-                                    displayName: 'Sex',
-                                    name: 'sex',
-                                    type: 'string',
-                                    default: '',
-                                },
-                                {
-                                    displayName: 'Birthdate',
-                                    name: 'birthdate',
+                                    displayName: 'Address',
+                                    name: 'address',
                                     type: 'string',
                                     default: '',
                                 },
@@ -1392,20 +1357,8 @@ class SmartSchool {
                                     default: '',
                                 },
                                 {
-                                    displayName: 'Nationality',
-                                    name: 'nationality',
-                                    type: 'string',
-                                    default: '',
-                                },
-                                {
-                                    displayName: 'Address',
-                                    name: 'address',
-                                    type: 'string',
-                                    default: '',
-                                },
-                                {
-                                    displayName: 'Postal Code',
-                                    name: 'postalcode',
+                                    displayName: 'Birthdate',
+                                    name: 'birthdate',
                                     type: 'string',
                                     default: '',
                                 },
@@ -1422,8 +1375,27 @@ class SmartSchool {
                                     default: '',
                                 },
                                 {
-                                    displayName: 'Phone',
-                                    name: 'phone',
+                                    displayName: 'Email',
+                                    name: 'email',
+                                    type: 'string',
+                                    placeholder: 'name@email.com',
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Extra Names',
+                                    name: 'extranames',
+                                    type: 'string',
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Initials',
+                                    name: 'initials',
+                                    type: 'string',
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Internal Number',
+                                    name: 'internnumber',
                                     type: 'string',
                                     default: '',
                                 },
@@ -1434,8 +1406,26 @@ class SmartSchool {
                                     default: '',
                                 },
                                 {
-                                    displayName: 'Email',
-                                    name: 'email',
+                                    displayName: 'Nationality',
+                                    name: 'nationality',
+                                    type: 'string',
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Phone',
+                                    name: 'phone',
+                                    type: 'string',
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Postal Code',
+                                    name: 'postalcode',
+                                    type: 'string',
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Primary Password',
+                                    name: 'passwd1',
                                     type: 'string',
                                     default: '',
                                 },
@@ -1443,14 +1433,18 @@ class SmartSchool {
                                     displayName: 'Secondary Password',
                                     name: 'passwd2',
                                     type: 'string',
-                                    typeOptions: { password: true },
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Sex',
+                                    name: 'sex',
+                                    type: 'string',
                                     default: '',
                                 },
                                 {
                                     displayName: 'Tertiary Password',
                                     name: 'passwd3',
                                     type: 'string',
-                                    typeOptions: { password: true },
                                     default: '',
                                 },
                             ],
@@ -1512,7 +1506,7 @@ class SmartSchool {
                         minValue: 0,
                     },
                     default: 0,
-                    description: '0 = main account, 1 = first co-account, etc.',
+                    description: '0 = main account, 1 = first co-account, etc',
                     displayOptions: {
                         show: {
                             resource: ['message'],
@@ -1525,7 +1519,7 @@ class SmartSchool {
                     name: 'copyToLVS',
                     type: 'boolean',
                     default: false,
-                    description: 'Copy the message to the SmartSchool LVS (student tracking system)',
+                    description: 'Whether to copy the message to the SmartSchool LVS (student tracking system)',
                     displayOptions: {
                         show: {
                             resource: ['message'],
@@ -1579,9 +1573,7 @@ class SmartSchool {
         var _a, _b, _c, _d, _e, _f, _g;
         const items = this.getInputData();
         const returnData = [];
-        const client = await GenericFunctions_1.getSmartSchoolClient.call(this);
-        const credentials = (await this.getCredentials('smartSchoolApi'));
-        const accesscode = credentials.accesscode;
+        const { accesscode } = await GenericFunctions_1.getSmartSchoolCredentials.call(this);
         for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
             const normalizeAndPush = (data) => {
                 if (Array.isArray(data)) {
@@ -1593,24 +1585,42 @@ class SmartSchool {
                     }
                     return;
                 }
+                if (data === null || data === undefined) {
+                    returnData.push({
+                        json: {},
+                        pairedItem: { item: itemIndex },
+                    });
+                    return;
+                }
+                if (typeof data !== 'object') {
+                    returnData.push({
+                        json: { value: data },
+                        pairedItem: { item: itemIndex },
+                    });
+                    return;
+                }
                 returnData.push({
-                    json: (data !== null && data !== void 0 ? data : {}),
+                    json: data,
                     pairedItem: { item: itemIndex },
                 });
             };
-            const formatSmartschoolError = (error) => {
-                if (error instanceof smartschool_kit_1.SmartschoolError) {
-                    const code = Number(error.code);
-                    const mapped = errorCodes_1.SMARTSCHOOL_ERROR_CODES[code];
-                    if (mapped) {
-                        return `SmartSchool error ${code}: ${mapped}`;
-                    }
-                    return `SmartSchool error ${code}: ${error.message}`;
+            const maybeThrowSmartschoolError = (result) => {
+                const code = typeof result === 'number'
+                    ? result
+                    : typeof result === 'string' && /^\d+$/.test(result)
+                        ? Number(result)
+                        : null;
+                if (code !== null && errorCodes_1.SMARTSCHOOL_ERROR_CODES[code]) {
+                    throw new n8n_workflow_1.NodeOperationError(this.getNode(), `SmartSchool error ${code}: ${errorCodes_1.SMARTSCHOOL_ERROR_CODES[code]}`, { itemIndex });
                 }
-                if (error instanceof Error) {
-                    return error.message;
-                }
-                return 'Unknown error';
+            };
+            const callMethod = async (method, params) => {
+                const result = await GenericFunctions_1.callSmartschoolSoap.call(this, method, {
+                    accesscode,
+                    ...params,
+                });
+                maybeThrowSmartschoolError(result);
+                return result;
             };
             try {
                 const resource = this.getNodeParameter('resource', itemIndex);
@@ -1620,38 +1630,21 @@ class SmartSchool {
                     const code = this.getNodeParameter('code', itemIndex);
                     const recursive = this.getNodeParameter('recursive', itemIndex, false);
                     const recursiveFlag = recursive ? '1' : '0';
-                    const params = {
-                        accesscode,
+                    const response = await callMethod(operation === 'getAllAccounts' ? 'getAllAccounts' : 'getAllAccountsExtended', {
                         code,
                         recursive: recursiveFlag,
-                    };
-                    const response = operation === 'getAllAccounts'
-                        ? await client.getAllAccounts(params)
-                        : await client.getAllAccountsExtended(params);
-                    if (Array.isArray(response)) {
-                        for (const entry of response) {
-                            returnData.push({
-                                json: entry,
-                                pairedItem: { item: itemIndex },
-                            });
-                        }
-                    }
-                    else {
-                        returnData.push({
-                            json: response,
-                            pairedItem: { item: itemIndex },
-                        });
-                    }
+                    });
+                    normalizeAndPush(response);
                     continue;
                 }
                 if (resource === 'group') {
                     if (operation === 'getAllGroupsAndClasses') {
-                        const response = await client.getAllGroupsAndClasses();
+                        const response = await callMethod('getAllGroupsAndClasses', {});
                         normalizeAndPush(response);
                         continue;
                     }
                     if (operation === 'getClassList') {
-                        const response = (await client.getClassList());
+                        const response = await callMethod('getClassList', {});
                         returnData.push({
                             json: { csv: response },
                             pairedItem: { item: itemIndex },
@@ -1659,31 +1652,24 @@ class SmartSchool {
                         continue;
                     }
                     if (operation === 'getClassListJson') {
-                        const response = await client.getClassListJson();
+                        const response = await callMethod('getClassListJson', {});
                         normalizeAndPush(response);
                         continue;
                     }
                     if (operation === 'getClassTeachers') {
                         const getAllOwners = this.getNodeParameter('getAllOwners', itemIndex, false);
-                        const response = await client.getClassTeachers({
-                            accesscode,
-                            getAllOwners,
-                        });
+                        const response = await callMethod('getClassTeachers', { getAllOwners });
                         normalizeAndPush(response);
                         continue;
                     }
                     if (operation === 'changeGroupVisibility') {
                         const code = this.getNodeParameter('code', itemIndex);
                         const visibility = this.getNodeParameter('groupVisibility', itemIndex);
-                        const response = await GenericFunctions_1.callSmartschoolSoap.call(this, 'changeGroupVisibility', {
-                            accesscode,
+                        const response = await callMethod('changeGroupVisibility', {
                             code,
                             visbility: visibility,
                         });
-                        returnData.push({
-                            json: { xml: response },
-                            pairedItem: { item: itemIndex },
-                        });
+                        normalizeAndPush(response);
                         continue;
                     }
                     if (operation === 'saveGroup' || operation === 'saveClass') {
@@ -1691,7 +1677,6 @@ class SmartSchool {
                         const required = ((_a = details.required) !== null && _a !== void 0 ? _a : {});
                         const optional = ((_b = details.optional) !== null && _b !== void 0 ? _b : {});
                         const payload = {
-                            accesscode,
                             name: required.name,
                             desc: required.desc,
                             code: required.code,
@@ -1710,8 +1695,8 @@ class SmartSchool {
                             }
                         }
                         const response = operation === 'saveGroup'
-                            ? await client.saveGroup(payload)
-                            : await client.saveClass(payload);
+                            ? await callMethod('saveGroup', payload)
+                            : await callMethod('saveClass', payload);
                         returnData.push({
                             json: { success: response },
                             pairedItem: { item: itemIndex },
@@ -1723,14 +1708,13 @@ class SmartSchool {
                         const classCode = this.getNodeParameter('classCode', itemIndex);
                         const officialDate = this.getNodeParameter('officialDate', itemIndex, '');
                         const payload = {
-                            accesscode,
                             userIdentifier,
                             class: classCode,
                         };
                         if (officialDate) {
                             payload.officialDate = officialDate;
                         }
-                        const response = await client.saveUserToClass(payload);
+                        const response = await callMethod('saveUserToClass', payload);
                         returnData.push({
                             json: { success: response },
                             pairedItem: { item: itemIndex },
@@ -1742,14 +1726,13 @@ class SmartSchool {
                         const classCode = this.getNodeParameter('classCode', itemIndex);
                         const officialDate = this.getNodeParameter('officialDate', itemIndex, '');
                         const payload = {
-                            accesscode,
                             userIdentifier,
                             class: classCode,
                         };
                         if (officialDate) {
                             payload.officialDate = officialDate;
                         }
-                        const response = await client.removeUserFromGroup(payload);
+                        const response = await callMethod('removeUserFromGroup', payload);
                         returnData.push({
                             json: { success: response },
                             pairedItem: { item: itemIndex },
@@ -1758,10 +1741,7 @@ class SmartSchool {
                     }
                     if (operation === 'delClass') {
                         const classCode = this.getNodeParameter('classCode', itemIndex);
-                        const response = await client.delClass({
-                            accesscode,
-                            code: classCode,
-                        });
+                        const response = await callMethod('delClass', { code: classCode });
                         returnData.push({
                             json: { success: response },
                             pairedItem: { item: itemIndex },
@@ -1770,28 +1750,19 @@ class SmartSchool {
                     }
                     if (operation === 'saveClassList') {
                         const serializedList = this.getNodeParameter('classListCsv', itemIndex);
-                        const response = await client.saveClassList({
-                            accesscode,
-                            serializedList,
-                        });
+                        const response = await callMethod('saveClassList', { serializedList });
                         normalizeAndPush(response);
                         continue;
                     }
                     if (operation === 'saveClassListJson') {
                         const jsonList = this.getNodeParameter('classListJson', itemIndex);
-                        const response = await client.saveClassListJson({
-                            accesscode,
-                            jsonList,
-                        });
+                        const response = await callMethod('saveClassListJson', { jsonList });
                         normalizeAndPush(response);
                         continue;
                     }
                     if (operation === 'getSchoolyearDataOfClass') {
                         const classCode = this.getNodeParameter('classCode', itemIndex);
-                        const response = await client.getSchoolyearDataOfClass({
-                            accesscode,
-                            classCode,
-                        });
+                        const response = await callMethod('getSchoolyearDataOfClass', { classCode });
                         normalizeAndPush(response);
                         continue;
                     }
@@ -1803,8 +1774,7 @@ class SmartSchool {
                         const residence = this.getNodeParameter('residence', itemIndex);
                         const domain = this.getNodeParameter('domain', itemIndex);
                         const principal = this.getNodeParameter('principal', itemIndex);
-                        const response = await client.saveSchoolyearDataOfClass({
-                            accesscode,
+                        const response = await callMethod('saveSchoolyearDataOfClass', {
                             classCode,
                             date,
                             instituteNumber,
@@ -1820,7 +1790,7 @@ class SmartSchool {
                         continue;
                     }
                     if (operation === 'getSkoreClassTeacherCourseRelation') {
-                        const response = await client.getSkoreClassTeacherCourseRelation();
+                        const response = await callMethod('getSkoreClassTeacherCourseRelation', {});
                         normalizeAndPush(response);
                         continue;
                     }
@@ -1828,13 +1798,12 @@ class SmartSchool {
                         const groupCode = this.getNodeParameter('code', itemIndex);
                         const officialDate = this.getNodeParameter('officialDate', itemIndex, '');
                         const payload = {
-                            accesscode,
                             group: groupCode,
                         };
                         if (officialDate) {
                             payload.officialDate = officialDate;
                         }
-                        const response = await client.clearGroup(payload);
+                        const response = await callMethod('clearGroup', payload);
                         returnData.push({
                             json: { success: response },
                             pairedItem: { item: itemIndex },
@@ -1845,13 +1814,12 @@ class SmartSchool {
                         const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
                         const officialDate = this.getNodeParameter('officialDate', itemIndex, '');
                         const payload = {
-                            accesscode,
                             userIdentifier,
                         };
                         if (officialDate) {
                             payload.officialDate = officialDate;
                         }
-                        const response = await client.unregisterStudent(payload);
+                        const response = await callMethod('unregisterStudent', payload);
                         returnData.push({
                             json: { success: response },
                             pairedItem: { item: itemIndex },
@@ -1862,37 +1830,25 @@ class SmartSchool {
                 if (resource === 'account') {
                     if (operation === 'getUserDetails') {
                         const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
-                        const response = await client.getUserDetails({
-                            accesscode,
-                            userIdentifier,
-                        });
+                        const response = await callMethod('getUserDetails', { userIdentifier });
                         normalizeAndPush(response);
                         continue;
                     }
                     if (operation === 'getUserDetailsByNumber') {
                         const number = this.getNodeParameter('internalNumber', itemIndex);
-                        const response = await client.getUserDetailsByNumber({
-                            accesscode,
-                            number,
-                        });
+                        const response = await callMethod('getUserDetailsByNumber', { number });
                         normalizeAndPush(response);
                         continue;
                     }
                     if (operation === 'getUserDetailsByUsername') {
                         const username = this.getNodeParameter('accountUsername', itemIndex);
-                        const response = await client.getUserDetailsByUsername({
-                            accesscode,
-                            username,
-                        });
+                        const response = await callMethod('getUserDetailsByUsername', { username });
                         normalizeAndPush(response);
                         continue;
                     }
                     if (operation === 'getUserDetailsByScannableCode') {
                         const scannableCode = this.getNodeParameter('scannableCode', itemIndex);
-                        const response = await client.getUserDetailsByScannableCode({
-                            accesscode,
-                            scannableCode,
-                        });
+                        const response = await callMethod('getUserDetailsByScannableCode', { scannableCode });
                         normalizeAndPush(response);
                         continue;
                     }
@@ -1900,11 +1856,7 @@ class SmartSchool {
                         const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
                         const date = this.getNodeParameter('officialClassDate', itemIndex, '') ||
                             new Date().toISOString().slice(0, 10);
-                        const response = await client.getUserOfficialClass({
-                            accesscode,
-                            userIdentifier,
-                            date,
-                        });
+                        const response = await callMethod('getUserOfficialClass', { userIdentifier, date });
                         normalizeAndPush(response);
                         continue;
                     }
@@ -1919,20 +1871,42 @@ class SmartSchool {
                             try {
                                 customFields = JSON.parse(customFieldsRaw);
                             }
-                            catch (error) {
+                            catch {
                                 throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'Custom fields must be valid JSON.', { itemIndex });
                             }
                         }
                         const payload = {
-                            accesscode,
                             username: required.username,
                             name: required.name,
                             surname: required.surname,
                             basisrol: required.basisrol,
-                            ...optional,
-                            ...customFields,
                         };
-                        const response = await client.saveUser(payload);
+                        const addIfValue = (key, value) => {
+                            if (value !== undefined && value !== null && value !== '') {
+                                payload[key] = value;
+                            }
+                        };
+                        addIfValue('passwd1', optional.passwd1);
+                        addIfValue('passwd2', optional.passwd2);
+                        addIfValue('passwd3', optional.passwd3);
+                        addIfValue('internnumber', optional.internnumber);
+                        addIfValue('extranames', optional.extranames);
+                        addIfValue('initials', optional.initials);
+                        addIfValue('sex', optional.sex);
+                        addIfValue('birthday', optional.birthdate);
+                        addIfValue('birthplace', optional.birthcity);
+                        addIfValue('birthcountry', optional.birthcountry);
+                        addIfValue('address', optional.address);
+                        addIfValue('postalcode', optional.postalcode);
+                        addIfValue('location', optional.city);
+                        addIfValue('country', optional.country);
+                        addIfValue('email', optional.email);
+                        addIfValue('mobilephone', optional.mobile);
+                        addIfValue('homephone', optional.phone);
+                        for (const [key, value] of Object.entries(customFields)) {
+                            addIfValue(key, value);
+                        }
+                        const response = await callMethod('saveUser', payload);
                         returnData.push({
                             json: { success: response },
                             pairedItem: { item: itemIndex },
@@ -1943,13 +1917,12 @@ class SmartSchool {
                         const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
                         const officialDate = this.getNodeParameter('officialDate', itemIndex, '');
                         const payload = {
-                            accesscode,
                             userIdentifier,
                         };
                         if (officialDate) {
                             payload.officialDate = officialDate;
                         }
-                        const response = await client.delUser(payload);
+                        const response = await callMethod('delUser', payload);
                         returnData.push({
                             json: { success: response },
                             pairedItem: { item: itemIndex },
@@ -1959,11 +1932,7 @@ class SmartSchool {
                     if (operation === 'setAccountStatus') {
                         const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
                         const accountStatus = this.getNodeParameter('accountStatus', itemIndex);
-                        const response = await client.setAccountStatus({
-                            accesscode,
-                            userIdentifier,
-                            accountStatus,
-                        });
+                        const response = await callMethod('setAccountStatus', { userIdentifier, accountStatus });
                         returnData.push({
                             json: { success: response },
                             pairedItem: { item: itemIndex },
@@ -1973,11 +1942,7 @@ class SmartSchool {
                     if (operation === 'changeUsername') {
                         const internNumber = this.getNodeParameter('internalNumber', itemIndex);
                         const newUsername = this.getNodeParameter('newUsername', itemIndex);
-                        const response = await client.changeUsername({
-                            accesscode,
-                            internNumber,
-                            newUsername,
-                        });
+                        const response = await callMethod('changeUsername', { internNumber, newUsername });
                         returnData.push({
                             json: { success: response },
                             pairedItem: { item: itemIndex },
@@ -1987,11 +1952,7 @@ class SmartSchool {
                     if (operation === 'changeInternNumber') {
                         const username = this.getNodeParameter('accountUsername', itemIndex);
                         const newInternNumber = this.getNodeParameter('newInternNumber', itemIndex);
-                        const response = await client.changeInternNumber({
-                            accesscode,
-                            username,
-                            newInternNumber,
-                        });
+                        const response = await callMethod('changeInternNumber', { username, newInternNumber });
                         returnData.push({
                             json: { success: response },
                             pairedItem: { item: itemIndex },
@@ -2001,8 +1962,7 @@ class SmartSchool {
                     if (operation === 'changePasswordAtNextLogin') {
                         const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
                         const accountType = this.getNodeParameter('accountType', itemIndex);
-                        const response = await client.changePasswordAtNextLogin({
-                            accesscode,
+                        const response = await callMethod('changePasswordAtNextLogin', {
                             userIdentifier,
                             accountType,
                         });
@@ -2015,11 +1975,7 @@ class SmartSchool {
                     if (operation === 'forcePasswordReset') {
                         const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
                         const accountType = this.getNodeParameter('accountType', itemIndex);
-                        const response = await client.forcePasswordReset({
-                            accesscode,
-                            userIdentifier,
-                            accountType,
-                        });
+                        const response = await callMethod('forcePasswordReset', { userIdentifier, accountType });
                         returnData.push({
                             json: { success: response },
                             pairedItem: { item: itemIndex },
@@ -2029,11 +1985,7 @@ class SmartSchool {
                     if (operation === 'replaceInum') {
                         const oldInum = this.getNodeParameter('oldInum', itemIndex);
                         const newInum = this.getNodeParameter('newInum', itemIndex);
-                        const response = await client.replaceInum({
-                            accesscode,
-                            oldInum,
-                            newInum,
-                        });
+                        const response = await callMethod('replaceInum', { oldInum, newInum });
                         returnData.push({
                             json: { success: response },
                             pairedItem: { item: itemIndex },
@@ -2044,10 +1996,9 @@ class SmartSchool {
                         const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
                         const paramName = this.getNodeParameter('paramName', itemIndex);
                         const paramValue = this.getNodeParameter('paramValue', itemIndex);
-                        const response = await client.saveUserParameter({
-                            accesscode,
+                        const response = await callMethod('saveUserParameter', {
                             userIdentifier,
-                            paramName: paramName,
+                            paramName,
                             paramValue,
                         });
                         returnData.push({
@@ -2059,11 +2010,7 @@ class SmartSchool {
                     if (operation === 'removeCoAccount') {
                         const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
                         const accountType = this.getNodeParameter('accountType', itemIndex);
-                        const response = await client.removeCoAccount({
-                            accesscode,
-                            userIdentifier,
-                            accountType,
-                        });
+                        const response = await callMethod('removeCoAccount', { userIdentifier, accountType });
                         returnData.push({
                             json: { success: response },
                             pairedItem: { item: itemIndex },
@@ -2075,8 +2022,7 @@ class SmartSchool {
                         const accountType = this.getNodeParameter('accountType', itemIndex);
                         const password = this.getNodeParameter('password', itemIndex);
                         const mustChangePassword = this.getNodeParameter('mustChangePassword', itemIndex);
-                        const response = await client.savePassword({
-                            accesscode,
+                        const response = await callMethod('savePassword', {
                             userIdentifier,
                             accountType,
                             password,
@@ -2091,8 +2037,7 @@ class SmartSchool {
                     if (operation === 'deactivateTwoFactorAuthentication') {
                         const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
                         const accountType = this.getNodeParameter('accountType', itemIndex);
-                        const response = await client.deactivateTwoFactorAuthentication({
-                            accesscode,
+                        const response = await callMethod('deactivateTwoFactorAuthentication', {
                             userIdentifier,
                             accountType,
                         });
@@ -2108,46 +2053,46 @@ class SmartSchool {
                         const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
                         const schoolYear = this.getNodeParameter('schoolYear', itemIndex);
                         const response = operation === 'getAbsents'
-                            ? await client.getAbsents({ accesscode, userIdentifier, schoolYear })
-                            : await client.getAbsentsWithAlias({ accesscode, userIdentifier, schoolYear });
+                            ? await callMethod('getAbsents', { userIdentifier, schoolYear })
+                            : await callMethod('getAbsentsWithAlias', { userIdentifier, schoolYear });
                         normalizeAndPush(response);
                         continue;
                     }
                     if (operation === 'getAbsentsByDate') {
                         const date = this.getNodeParameter('absenceDate', itemIndex);
-                        const response = await client.getAbsentsByDate({ accesscode, date });
+                        const response = await callMethod('getAbsentsByDate', { date });
                         normalizeAndPush(response);
                         continue;
                     }
                     if (operation === 'getAbsentsWithAliasByDate') {
                         const date = this.getNodeParameter('absenceDate', itemIndex);
-                        const response = await client.getAbsentsWithAliasByDate({ accesscode, date });
+                        const response = await callMethod('getAbsentsWithAliasByDate', { date });
                         normalizeAndPush(response);
                         continue;
                     }
                     if (operation === 'getAbsentsWithInternalNumberByDate') {
                         const date = this.getNodeParameter('absenceDate', itemIndex);
-                        const response = await client.getAbsentsWithInternalNumberByDate({ accesscode, date });
+                        const response = await callMethod('getAbsentsWithInternalNumberByDate', { date });
                         normalizeAndPush(response);
                         continue;
                     }
                     if (operation === 'getAbsentsWithUsernameByDate') {
                         const date = this.getNodeParameter('absenceDate', itemIndex);
-                        const response = await client.getAbsentsWithUsernameByDate({ accesscode, date });
+                        const response = await callMethod('getAbsentsWithUsernameByDate', { date });
                         normalizeAndPush(response);
                         continue;
                     }
                     if (operation === 'getAbsentsByDateAndGroup') {
                         const date = this.getNodeParameter('absenceDate', itemIndex);
                         const code = this.getNodeParameter('code', itemIndex);
-                        const response = await client.getAbsentsByDateAndGroup({ accesscode, date, code });
+                        const response = await callMethod('getAbsentsByDateAndGroup', { date, code });
                         normalizeAndPush(response);
                         continue;
                     }
                 }
                 if (resource === 'course') {
                     if (operation === 'getCourses') {
-                        const response = await client.getCourses();
+                        const response = await callMethod('getCourses', {});
                         returnData.push({
                             json: { csv: response },
                             pairedItem: { item: itemIndex },
@@ -2158,12 +2103,7 @@ class SmartSchool {
                         const coursename = this.getNodeParameter('courseName', itemIndex);
                         const coursedesc = this.getNodeParameter('courseCode', itemIndex);
                         const visibility = this.getNodeParameter('courseVisibility', itemIndex);
-                        const response = await client.addCourse({
-                            accesscode,
-                            coursename,
-                            coursedesc,
-                            visibility,
-                        });
+                        const response = await callMethod('addCourse', { coursename, coursedesc, visibility });
                         returnData.push({
                             json: { success: response },
                             pairedItem: { item: itemIndex },
@@ -2174,8 +2114,7 @@ class SmartSchool {
                         const coursename = this.getNodeParameter('courseName', itemIndex);
                         const coursedesc = this.getNodeParameter('courseCode', itemIndex);
                         const groupIds = this.getNodeParameter('courseGroupIds', itemIndex);
-                        const response = await client.addCourseStudents({
-                            accesscode,
+                        const response = await callMethod('addCourseStudents', {
                             coursename,
                             coursedesc,
                             groupIds,
@@ -2191,12 +2130,11 @@ class SmartSchool {
                         const coursedesc = this.getNodeParameter('courseCode', itemIndex);
                         const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
                         const internnummer = this.getNodeParameter('courseTeacherInternNumber', itemIndex);
-                        const response = await client.addCourseTeacher({
-                            accesscode,
+                        const response = await callMethod('addCourseTeacher', {
                             coursename,
                             coursedesc,
-                            userIdentifier,
                             internnummer,
+                            userlist: userIdentifier,
                         });
                         returnData.push({
                             json: { success: response },
@@ -2207,52 +2145,33 @@ class SmartSchool {
                 }
                 if (resource === 'system') {
                     if (operation === 'startSkoreSync') {
-                        const response = await client.startSkoreSync();
+                        const response = await callMethod('startSkoreSync', {});
                         normalizeAndPush(response);
                         continue;
                     }
                     if (operation === 'checkStatus') {
                         const serviceId = this.getNodeParameter('serviceId', itemIndex);
-                        const response = await client.checkStatus({ accesscode, serviceId });
+                        const response = await callMethod('checkStatus', { serviceId });
                         normalizeAndPush(response);
                         continue;
                     }
                     if (operation === 'getStudentCareer') {
                         const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
-                        const response = await client.getStudentCareer({ accesscode, userIdentifier });
+                        const response = await callMethod('getStudentCareer', { userIdentifier });
                         normalizeAndPush(response);
                         continue;
                     }
                     if (operation === 'getDeliberationLines') {
                         const dateInSchoolYear = this.getNodeParameter('deliberationDate', itemIndex);
-                        const response = await GenericFunctions_1.callSmartschoolSoap.call(this, 'getDeliberationLines', {
-                            accesscode,
-                            dateInSchoolYear,
-                        });
-                        returnData.push({
-                            json: { xml: response },
-                            pairedItem: { item: itemIndex },
-                        });
+                        const response = await callMethod('getDeliberationLines', { dateInSchoolYear });
+                        normalizeAndPush(response);
                         continue;
                     }
                 }
                 if (resource === 'helpdesk') {
                     if (operation === 'getHelpdeskMiniDbItems') {
-                        const response = (await client.getHelpdeskMiniDbItems());
-                        if (Array.isArray(response)) {
-                            for (const entry of response) {
-                                returnData.push({
-                                    json: entry,
-                                    pairedItem: { item: itemIndex },
-                                });
-                            }
-                        }
-                        else {
-                            returnData.push({
-                                json: response,
-                                pairedItem: { item: itemIndex },
-                            });
-                        }
+                        const response = await callMethod('getHelpdeskMiniDbItems', {});
+                        normalizeAndPush(response);
                         continue;
                     }
                     if (operation === 'addHelpdeskTicket') {
@@ -2261,19 +2180,17 @@ class SmartSchool {
                         const priority = this.getNodeParameter('priority', itemIndex);
                         const miniDbItem = this.getNodeParameter('miniDbItem', itemIndex);
                         const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
-                        const response = await client.addHelpdeskTicket({
-                            accesscode,
+                        const response = await callMethod('addHelpdeskTicket', {
                             title,
                             description,
                             priority,
                             miniDbItem,
                             userIdentifier,
                         });
-                        const ticketResult = typeof response === 'object' && response !== null
-                            ? response
-                            : { success: response };
                         returnData.push({
-                            json: ticketResult,
+                            json: typeof response === 'object' && response !== null
+                                ? response
+                                : { success: response },
                             pairedItem: { item: itemIndex },
                         });
                         continue;
@@ -2288,7 +2205,6 @@ class SmartSchool {
                     const copyToLVS = this.getNodeParameter('copyToLVS', itemIndex, false);
                     const attachmentCollection = this.getNodeParameter('attachments', itemIndex, {});
                     const payload = {
-                        accesscode,
                         userIdentifier,
                         title,
                         body,
@@ -2299,9 +2215,9 @@ class SmartSchool {
                     const attachmentValues = ((_g = attachmentCollection.attachment) !== null && _g !== void 0 ? _g : []);
                     const cleanedAttachments = attachmentValues.filter((entry) => (entry === null || entry === void 0 ? void 0 : entry.filename) && (entry === null || entry === void 0 ? void 0 : entry.filedata));
                     if (cleanedAttachments.length) {
-                        payload.attachments = cleanedAttachments;
+                        payload.attachments = JSON.stringify(cleanedAttachments);
                     }
-                    const response = await client.sendMsg(payload);
+                    const response = await callMethod('sendMsg', payload);
                     returnData.push({
                         json: { success: response },
                         pairedItem: { item: itemIndex },
@@ -2312,8 +2228,7 @@ class SmartSchool {
                     const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
                     const signature = this.getNodeParameter('signature', itemIndex);
                     const accountType = this.getNodeParameter('signatureAccountType', itemIndex);
-                    const response = await client.saveSignature({
-                        accesscode,
+                    const response = await callMethod('saveSignature', {
                         userIdentifier,
                         accountType,
                         signature,
@@ -2325,14 +2240,14 @@ class SmartSchool {
                     continue;
                 }
                 if (resource === 'parameter' && operation === 'getReferenceField') {
-                    const response = await client.getReferenceField();
+                    const response = await callMethod('getReferenceField', {});
                     normalizeAndPush(response);
                     continue;
                 }
                 throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Unsupported resource "${resource}" or operation "${operation}"`, { itemIndex });
             }
             catch (error) {
-                const errorMessage = formatSmartschoolError(error);
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
                 if (this.continueOnFail()) {
                     returnData.push({
                         json: {

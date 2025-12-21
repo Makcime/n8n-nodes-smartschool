@@ -1,36 +1,62 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSmartSchoolClient = getSmartSchoolClient;
+exports.getSmartSchoolCredentials = getSmartSchoolCredentials;
 exports.callSmartschoolSoap = callSmartschoolSoap;
 const n8n_workflow_1 = require("n8n-workflow");
-const smartschool_kit_1 = require("@abrianto/smartschool-kit");
-const schemas_1 = require("./shared/schemas");
 const xmlEscape = (value) => value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/\"/g, '&quot;')
+    .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
-async function getSmartSchoolClient() {
-    const credentials = (await this.getCredentials('smartSchoolApi'));
-    const parsed = schemas_1.SmartSchoolCredentialsSchema.safeParse(credentials);
-    if (!parsed.success) {
-        const message = parsed.error.issues.map((err) => `${err.path.join('.')}: ${err.message}`).join('; ');
-        throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Invalid SmartSchool credentials: ${message}`);
+const decodeXmlEntities = (value) => value
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&');
+const parseSoapResponse = (xml) => {
+    const faultMatch = xml.match(/<faultstring[^>]*>([\s\S]*?)<\/faultstring>/i);
+    if (faultMatch === null || faultMatch === void 0 ? void 0 : faultMatch[1]) {
+        const message = decodeXmlEntities(faultMatch[1].trim());
+        throw new Error(message);
     }
-    return new smartschool_kit_1.SmartschoolClient({
-        apiEndpoint: parsed.data.apiEndpoint,
-        accesscode: parsed.data.accesscode,
-    });
+    const returnMatch = xml.match(/<return[^>]*>([\s\S]*?)<\/return>/i);
+    if (!(returnMatch === null || returnMatch === void 0 ? void 0 : returnMatch[1])) {
+        return xml;
+    }
+    const rawValue = decodeXmlEntities(returnMatch[1]).trim();
+    if (rawValue === '') {
+        return '';
+    }
+    if (rawValue === 'true' || rawValue === 'false') {
+        return rawValue === 'true';
+    }
+    if (/^-?\d+(\.\d+)?$/.test(rawValue)) {
+        return Number(rawValue);
+    }
+    if ((rawValue.startsWith('{') && rawValue.endsWith('}')) ||
+        (rawValue.startsWith('[') && rawValue.endsWith(']'))) {
+        try {
+            return JSON.parse(rawValue);
+        }
+        catch {
+            return rawValue;
+        }
+    }
+    return rawValue;
+};
+async function getSmartSchoolCredentials() {
+    const credentials = (await this.getCredentials('smartSchoolApi'));
+    const apiEndpoint = credentials === null || credentials === void 0 ? void 0 : credentials.apiEndpoint;
+    const accesscode = credentials === null || credentials === void 0 ? void 0 : credentials.accesscode;
+    if (!apiEndpoint || !accesscode) {
+        throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'SmartSchool credentials are not configured correctly.');
+    }
+    return { apiEndpoint, accesscode };
 }
 async function callSmartschoolSoap(method, params) {
-    const credentials = (await this.getCredentials('smartSchoolApi'));
-    const parsed = schemas_1.SmartSchoolCredentialsSchema.safeParse(credentials);
-    if (!parsed.success) {
-        const message = parsed.error.issues.map((err) => `${err.path.join('.')}: ${err.message}`).join('; ');
-        throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Invalid SmartSchool credentials: ${message}`);
-    }
-    const apiEndpoint = parsed.data.apiEndpoint;
+    const { apiEndpoint } = await getSmartSchoolCredentials.call(this);
     const namespace = apiEndpoint;
     const paramXml = Object.entries(params)
         .map(([key, value]) => `<${key}>${xmlEscape(String(value))}</${key}>`)
@@ -48,6 +74,6 @@ async function callSmartschoolSoap(method, params) {
         },
         body: envelope,
         json: false,
-    });
+    }).then(parseSoapResponse);
 }
 //# sourceMappingURL=GenericFunctions.js.map

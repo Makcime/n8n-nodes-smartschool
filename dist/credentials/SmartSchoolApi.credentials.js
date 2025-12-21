@@ -7,6 +7,24 @@ class SmartSchoolApi {
         this.displayName = 'SmartSchool API';
         this.icon = { light: 'file:../icons/smartschool.logo.svg', dark: 'file:../icons/smartschool.logo.dark.svg' };
         this.documentationUrl = 'https://schoolsync.gitbook.io/smartschool-kit';
+        this.test = {
+            request: {
+                method: 'POST',
+                baseURL: '={{$credentials.apiEndpoint}}',
+                url: '',
+                headers: {
+                    'Content-Type': 'text/xml; charset=utf-8',
+                    SOAPAction: '={{$credentials.apiEndpoint}}#getReferenceField',
+                },
+                body: '<?xml version="1.0" encoding="utf-8"?>' +
+                    '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" ' +
+                    'xmlns:tns="={{$credentials.apiEndpoint}}">' +
+                    '<soap:Body><tns:getReferenceField>' +
+                    '<accesscode>{{$credentials.accesscode}}</accesscode>' +
+                    '</tns:getReferenceField></soap:Body></soap:Envelope>',
+                json: false,
+            },
+        };
         this.properties = [
             {
                 displayName: 'API Endpoint',

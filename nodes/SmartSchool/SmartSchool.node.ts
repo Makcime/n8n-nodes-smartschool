@@ -7,9 +7,7 @@ import type {
 } from 'n8n-workflow';
 import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
-import { SmartschoolError } from '@abrianto/smartschool-kit';
-
-import { callSmartschoolSoap, getSmartSchoolClient } from './GenericFunctions';
+import { callSmartschoolSoap, getSmartSchoolCredentials } from './GenericFunctions';
 import { ACCOUNT_STATUS_OPTIONS, VISIBILITY_OPTIONS } from './shared/fields';
 import { SMARTSCHOOL_ERROR_CODES } from './shared/errorCodes';
 
@@ -112,6 +110,18 @@ export class SmartSchool implements INodeType {
 				default: 'group',
 				options: [
 					{
+						name: 'Absence',
+						value: 'absence',
+					},
+					{
+						name: 'Account',
+						value: 'account',
+					},
+					{
+						name: 'Course',
+						value: 'course',
+					},
+					{
 						name: 'Group',
 						value: 'group',
 					},
@@ -124,20 +134,8 @@ export class SmartSchool implements INodeType {
 						value: 'message',
 					},
 					{
-						name: 'Account',
-						value: 'account',
-					},
-					{
 						name: 'Parameter',
 						value: 'parameter',
-					},
-					{
-						name: 'Absence',
-						value: 'absence',
-					},
-					{
-						name: 'Course',
-						value: 'course',
 					},
 					{
 						name: 'System',
@@ -158,60 +156,6 @@ export class SmartSchool implements INodeType {
 				},
 				options: [
 					{
-						name: 'Get User Details',
-						value: 'getUserDetails',
-						description: 'Get user details by SmartSchool identifier',
-						action: 'Get user details',
-					},
-					{
-						name: 'Get User Details by Number',
-						value: 'getUserDetailsByNumber',
-						description: 'Get user details by internal number',
-						action: 'Get user details by number',
-					},
-					{
-						name: 'Get User Details by Username',
-						value: 'getUserDetailsByUsername',
-						description: 'Get user details by username',
-						action: 'Get user details by username',
-					},
-					{
-						name: 'Get User Details by Scannable Code',
-						value: 'getUserDetailsByScannableCode',
-						description: 'Get user details by scannable code',
-						action: 'Get user details by scannable code',
-					},
-					{
-						name: 'Get User Official Class',
-						value: 'getUserOfficialClass',
-						description: 'Retrieve the official class for a user',
-						action: 'Get user official class',
-					},
-					{
-						name: 'Save User',
-						value: 'saveUser',
-						description: 'Create or update a SmartSchool user',
-						action: 'Save user',
-					},
-					{
-						name: 'Delete User',
-						value: 'delUser',
-						description: 'Remove a user from SmartSchool',
-						action: 'Delete user',
-					},
-					{
-						name: 'Set Account Status',
-						value: 'setAccountStatus',
-						description: 'Activate, deactivate, or set account status',
-						action: 'Set account status',
-					},
-					{
-						name: 'Change Username',
-						value: 'changeUsername',
-						description: 'Change a username using the internal number',
-						action: 'Change username',
-					},
-					{
 						name: 'Change Internal Number',
 						value: 'changeInternNumber',
 						description: 'Change the internal number for a user',
@@ -224,10 +168,62 @@ export class SmartSchool implements INodeType {
 						action: 'Change password at next login',
 					},
 					{
+						name: 'Change Username',
+						value: 'changeUsername',
+						description: 'Change a username using the internal number',
+						action: 'Change username',
+					},
+					{
+						name: 'Deactivate Two-Factor Authentication',
+						value: 'deactivateTwoFactorAuthentication',
+						description: 'Deprecated SmartSchool method to disable 2FA',
+						action: 'Deactivate two factor authentication',
+					},
+					{
+						name: 'Delete User',
+						value: 'delUser',
+						description: 'Remove a user from SmartSchool',
+						action: 'Delete user',
+					},
+					{
 						name: 'Force Password Reset',
 						value: 'forcePasswordReset',
 						description: 'Force a password reset for a user account',
 						action: 'Force password reset',
+					},
+					{
+						name: 'Get User Details',
+						value: 'getUserDetails',
+						description: 'Get user details by SmartSchool identifier',
+						action: 'Get user details',
+					},
+					{
+						name: 'Get User Details by Number',
+						value: 'getUserDetailsByNumber',
+						description: 'Get user details by internal number',
+						action: 'Get user details by number',
+					},
+					{
+						name: 'Get User Details by Scannable Code',
+						value: 'getUserDetailsByScannableCode',
+						action: 'Get user details by scannable code',
+					},
+					{
+						name: 'Get User Details by Username',
+						value: 'getUserDetailsByUsername',
+						action: 'Get user details by username',
+					},
+					{
+						name: 'Get User Official Class',
+						value: 'getUserOfficialClass',
+						description: 'Retrieve the official class for a user',
+						action: 'Get user official class',
+					},
+					{
+						name: 'Remove Co-Account',
+						value: 'removeCoAccount',
+						description: 'Remove a co-account from a user',
+						action: 'Remove co account',
 					},
 					{
 						name: 'Replace Internal Number',
@@ -236,28 +232,28 @@ export class SmartSchool implements INodeType {
 						action: 'Replace internal number',
 					},
 					{
-						name: 'Save User Parameter',
-						value: 'saveUserParameter',
-						description: 'Update a SmartSchool user parameter',
-						action: 'Save user parameter',
-					},
-					{
-						name: 'Remove Co-Account',
-						value: 'removeCoAccount',
-						description: 'Remove a co-account from a user',
-						action: 'Remove co-account',
-					},
-					{
 						name: 'Save Password',
 						value: 'savePassword',
 						description: 'Set a new password for a user account',
 						action: 'Save password',
 					},
 					{
-						name: 'Deactivate Two-Factor Authentication',
-						value: 'deactivateTwoFactorAuthentication',
-						description: 'Deprecated SmartSchool method to disable 2FA',
-						action: 'Deactivate two-factor authentication',
+						name: 'Save User',
+						value: 'saveUser',
+						description: 'Create or update a SmartSchool user',
+						action: 'Save user',
+					},
+					{
+						name: 'Save User Parameter',
+						value: 'saveUserParameter',
+						description: 'Update a SmartSchool user parameter',
+						action: 'Save user parameter',
+					},
+					{
+						name: 'Set Account Status',
+						value: 'setAccountStatus',
+						description: 'Activate, deactivate, or set account status',
+						action: 'Set account status',
 					},
 				],
 			},
@@ -280,16 +276,22 @@ export class SmartSchool implements INodeType {
 						action: 'Get absents',
 					},
 					{
-						name: 'Get Absents with Alias',
-						value: 'getAbsentsWithAlias',
-						description: 'Get absences with alias labels for a user and school year',
-						action: 'Get absents with alias',
-					},
-					{
 						name: 'Get Absents by Date',
 						value: 'getAbsentsByDate',
 						description: 'Get absences for all students on a date',
 						action: 'Get absents by date',
+					},
+					{
+						name: 'Get Absents by Date and Group',
+						value: 'getAbsentsByDateAndGroup',
+						description: 'Get absences for a date filtered by group',
+						action: 'Get absents by date and group',
+					},
+					{
+						name: 'Get Absents with Alias',
+						value: 'getAbsentsWithAlias',
+						description: 'Get absences with alias labels for a user and school year',
+						action: 'Get absents with alias',
 					},
 					{
 						name: 'Get Absents with Alias by Date',
@@ -308,12 +310,6 @@ export class SmartSchool implements INodeType {
 						value: 'getAbsentsWithUsernameByDate',
 						description: 'Get absences indexed by username for a date',
 						action: 'Get absents by username',
-					},
-					{
-						name: 'Get Absents by Date and Group',
-						value: 'getAbsentsByDateAndGroup',
-						description: 'Get absences for a date filtered by group',
-						action: 'Get absents by date and group',
 					},
 				],
 			},
@@ -406,6 +402,24 @@ export class SmartSchool implements INodeType {
 				},
 				options: [
 					{
+						name: 'Change Group Visibility',
+						value: 'changeGroupVisibility',
+						description: 'Toggle visibility of a group or class',
+						action: 'Change group visibility',
+					},
+					{
+						name: 'Clear Group',
+						value: 'clearGroup',
+						description: 'Remove all users from a group',
+						action: 'Clear group',
+					},
+					{
+						name: 'Delete Class',
+						value: 'delClass',
+						description: 'Delete a class or group',
+						action: 'Delete class',
+					},
+					{
 						name: 'Get All Accounts',
 						value: 'getAllAccounts',
 						description: 'List all user accounts from a SmartSchool group',
@@ -442,40 +456,28 @@ export class SmartSchool implements INodeType {
 						action: 'Get class teachers',
 					},
 					{
-						name: 'Change Group Visibility',
-						value: 'changeGroupVisibility',
-						description: 'Toggle visibility of a group or class',
-						action: 'Change group visibility',
+						name: 'Get Schoolyear Data of Class',
+						value: 'getSchoolyearDataOfClass',
+						description: 'Retrieve schoolyear metadata for a class',
+						action: 'Get schoolyear data of class',
 					},
 					{
-						name: 'Save Group',
-						value: 'saveGroup',
-						description: 'Create or update a group',
-						action: 'Save group',
+						name: 'Get Skore Class Teacher Course Relation',
+						value: 'getSkoreClassTeacherCourseRelation',
+						description: 'Retrieve Skore class-teacher-course relations',
+						action: 'Get skore class teacher course relation',
+					},
+					{
+						name: 'Remove User From Group',
+						value: 'removeUserFromGroup',
+						description: 'Remove a user from a class or group',
+						action: 'Remove user from group',
 					},
 					{
 						name: 'Save Class',
 						value: 'saveClass',
 						description: 'Create or update a class',
 						action: 'Save class',
-					},
-					{
-						name: 'Save User to Group',
-						value: 'saveUserToGroup',
-						description: 'Assign a user to a class or group',
-						action: 'Save user to group',
-					},
-					{
-						name: 'Remove User from Group',
-						value: 'removeUserFromGroup',
-						description: 'Remove a user from a class or group',
-						action: 'Remove user from group',
-					},
-					{
-						name: 'Delete Class',
-						value: 'delClass',
-						description: 'Delete a class or group',
-						action: 'Delete class',
 					},
 					{
 						name: 'Save Class List (CSV)',
@@ -490,10 +492,10 @@ export class SmartSchool implements INodeType {
 						action: 'Save class list json',
 					},
 					{
-						name: 'Get Schoolyear Data of Class',
-						value: 'getSchoolyearDataOfClass',
-						description: 'Retrieve schoolyear metadata for a class',
-						action: 'Get schoolyear data of class',
+						name: 'Save Group',
+						value: 'saveGroup',
+						description: 'Create or update a group',
+						action: 'Save group',
 					},
 					{
 						name: 'Save Schoolyear Data of Class',
@@ -502,16 +504,10 @@ export class SmartSchool implements INodeType {
 						action: 'Save schoolyear data of class',
 					},
 					{
-						name: 'Get Skore Class Teacher Course Relation',
-						value: 'getSkoreClassTeacherCourseRelation',
-						description: 'Retrieve Skore class-teacher-course relations',
-						action: 'Get skore class teacher course relation',
-					},
-					{
-						name: 'Clear Group',
-						value: 'clearGroup',
-						description: 'Remove all users from a group',
-						action: 'Clear group',
+						name: 'Save User to Group',
+						value: 'saveUserToGroup',
+						description: 'Assign a user to a class or group',
+						action: 'Save user to group',
 					},
 					{
 						name: 'Unregister Student',
@@ -557,7 +553,7 @@ export class SmartSchool implements INodeType {
 						name: 'Send Message',
 						value: 'sendMsg',
 						description: 'Send a SmartSchool message to a user or co-account',
-						action: 'Send SmartSchool message',
+						action: 'Send smart school message',
 					},
 					{
 						name: 'Save Signature',
@@ -672,44 +668,44 @@ export class SmartSchool implements INodeType {
 						name: 'required',
 						values: [
 							{
-								displayName: 'Name',
-								name: 'name',
-								type: 'string',
-								default: '',
-								required: true,
+						displayName: 'Code',
+						name: 'code',
+						type: 'string',
+						default: '',
+							required:	true,
 							},
 							{
-								displayName: 'Description',
-								name: 'desc',
-								type: 'string',
-								default: '',
-								required: true,
+						displayName: 'Description',
+						name: 'desc',
+						type: 'string',
+						default: '',
+							required:	true,
 							},
 							{
-								displayName: 'Code',
-								name: 'code',
-								type: 'string',
-								default: '',
-								required: true,
+						displayName: 'Name',
+						name: 'name',
+						type: 'string',
+						default: '',
+							required:	true,
 							},
 							{
-								displayName: 'Parent Code',
-								name: 'parent',
-								type: 'string',
-								default: '',
-								required: true,
+						displayName: 'Parent Code',
+						name: 'parent',
+						type: 'string',
+						default: '',
+							required:	true,
 							},
 							{
-								displayName: 'Untis Code',
-								name: 'untis',
-								type: 'string',
-								default: '',
-								required: true,
+						displayName: 'Untis Code',
+						name: 'untis',
+						type: 'string',
+						default: '',
+							required:	true,
 							},
 						],
 					},
 					{
-						displayName: 'Optional (Classes only)',
+						displayName: 'Optional (Classes Only)',
 						name: 'optional',
 						values: [
 							{
@@ -822,7 +818,6 @@ export class SmartSchool implements INodeType {
 				type: 'string',
 				default: '',
 				required: true,
-				description: 'Administrative group number',
 				displayOptions: {
 					show: {
 						resource: ['group'],
@@ -1166,7 +1161,7 @@ export class SmartSchool implements INodeType {
 				name: 'officialClassDate',
 				type: 'string',
 				default: '',
-				description: 'Date (YYYY-MM-DD). Leave empty to use today',
+				description: 'Date (YYYY-MM-DD). Leave empty to use today.',
 				displayOptions: {
 					show: {
 						resource: ['account'],
@@ -1225,7 +1220,7 @@ export class SmartSchool implements INodeType {
 					minValue: 0,
 				},
 				default: 0,
-				description: '0 = main account, 1 = first co-account, etc.',
+				description: '0 = main account, 1 = first co-account, etc',
 				displayOptions: {
 					show: {
 						resource: ['account'],
@@ -1247,7 +1242,7 @@ export class SmartSchool implements INodeType {
 					minValue: 0,
 				},
 				default: 0,
-				description: '0 = main account, 1 = first co-account, etc.',
+				description: '0 = main account, 1 = first co-account, etc',
 				displayOptions: {
 					show: {
 						resource: ['message'],
@@ -1277,7 +1272,7 @@ export class SmartSchool implements INodeType {
 				name: 'mustChangePassword',
 				type: 'boolean',
 				default: false,
-				description: 'Force the user to change password at next login',
+				description: 'Whether to force the user to change password at next login',
 				displayOptions: {
 					show: {
 						resource: ['account'],
@@ -1403,10 +1398,10 @@ export class SmartSchool implements INodeType {
 								name: 'basisrol',
 								type: 'options',
 								options: [
-									{ name: 'Student (leerling)', value: 'leerling' },
-									{ name: 'Teacher (leerkracht)', value: 'leerkracht' },
-									{ name: 'Management (directie)', value: 'directie' },
-									{ name: 'Other (andere)', value: 'andere' },
+									{ name: 'Student (Leerling)', value: 'leerling' },
+									{ name: 'Teacher (Leerkracht)', value: 'leerkracht' },
+									{ name: 'Management (Directie)', value: 'directie' },
+									{ name: 'Other (Andere)', value: 'andere' },
 								],
 								default: 'leerling',
 								required: true,
@@ -1418,115 +1413,113 @@ export class SmartSchool implements INodeType {
 						name: 'optional',
 						values: [
 							{
-								displayName: 'Primary Password',
-								name: 'passwd1',
-								type: 'string',
-								typeOptions: { password: true },
-								default: '',
+						displayName: 'Address',
+						name: 'address',
+						type: 'string',
+						default: '',
 							},
 							{
-								displayName: 'Internal Number',
-								name: 'internnumber',
-								type: 'string',
-								default: '',
+						displayName: 'Birth City',
+						name: 'birthcity',
+						type: 'string',
+						default: '',
 							},
 							{
-								displayName: 'Extra Names',
-								name: 'extranames',
-								type: 'string',
-								default: '',
+						displayName: 'Birth Country',
+						name: 'birthcountry',
+						type: 'string',
+						default: '',
 							},
 							{
-								displayName: 'Initials',
-								name: 'initials',
-								type: 'string',
-								default: '',
+						displayName: 'Birthdate',
+						name: 'birthdate',
+						type: 'string',
+						default: '',
 							},
 							{
-								displayName: 'Sex',
-								name: 'sex',
-								type: 'string',
-								default: '',
+						displayName: 'City',
+						name: 'city',
+						type: 'string',
+						default: '',
 							},
 							{
-								displayName: 'Birthdate',
-								name: 'birthdate',
-								type: 'string',
-								default: '',
+						displayName: 'Country',
+						name: 'country',
+						type: 'string',
+						default: '',
 							},
 							{
-								displayName: 'Birth City',
-								name: 'birthcity',
-								type: 'string',
-								default: '',
+						displayName: 'Email',
+						name: 'email',
+						type: 'string',
+						placeholder: 'name@email.com',
+						default: '',
 							},
 							{
-								displayName: 'Birth Country',
-								name: 'birthcountry',
-								type: 'string',
-								default: '',
+						displayName: 'Extra Names',
+						name: 'extranames',
+						type: 'string',
+						default: '',
 							},
 							{
-								displayName: 'Nationality',
-								name: 'nationality',
-								type: 'string',
-								default: '',
+						displayName: 'Initials',
+						name: 'initials',
+						type: 'string',
+						default: '',
 							},
 							{
-								displayName: 'Address',
-								name: 'address',
-								type: 'string',
-								default: '',
+						displayName: 'Internal Number',
+						name: 'internnumber',
+						type: 'string',
+						default: '',
 							},
 							{
-								displayName: 'Postal Code',
-								name: 'postalcode',
-								type: 'string',
-								default: '',
+						displayName: 'Mobile',
+						name: 'mobile',
+						type: 'string',
+						default: '',
 							},
 							{
-								displayName: 'City',
-								name: 'city',
-								type: 'string',
-								default: '',
+						displayName: 'Nationality',
+						name: 'nationality',
+						type: 'string',
+						default: '',
 							},
 							{
-								displayName: 'Country',
-								name: 'country',
-								type: 'string',
-								default: '',
+						displayName: 'Phone',
+						name: 'phone',
+						type: 'string',
+						default: '',
 							},
 							{
-								displayName: 'Phone',
-								name: 'phone',
-								type: 'string',
-								default: '',
+						displayName: 'Postal Code',
+						name: 'postalcode',
+						type: 'string',
+						default: '',
 							},
 							{
-								displayName: 'Mobile',
-								name: 'mobile',
-								type: 'string',
-								default: '',
+						displayName: 'Primary Password',
+						name: 'passwd1',
+						type: 'string',
+						default: '',
 							},
 							{
-								displayName: 'Email',
-								name: 'email',
-								type: 'string',
-								default: '',
+						displayName: 'Secondary Password',
+						name: 'passwd2',
+						type: 'string',
+						default: '',
 							},
 							{
-								displayName: 'Secondary Password',
-								name: 'passwd2',
-								type: 'string',
-								typeOptions: { password: true },
-								default: '',
+						displayName: 'Sex',
+						name: 'sex',
+						type: 'string',
+						default: '',
 							},
 							{
-								displayName: 'Tertiary Password',
-								name: 'passwd3',
-								type: 'string',
-								typeOptions: { password: true },
-								default: '',
+						displayName: 'Tertiary Password',
+						name: 'passwd3',
+						type: 'string',
+						default: '',
 							},
 						],
 					},
@@ -1587,7 +1580,7 @@ export class SmartSchool implements INodeType {
 						minValue: 0,
 					},
 					default: 0,
-					description: '0 = main account, 1 = first co-account, etc.',
+					description: '0 = main account, 1 = first co-account, etc',
 					displayOptions: {
 						show: {
 							resource: ['message'],
@@ -1595,15 +1588,15 @@ export class SmartSchool implements INodeType {
 						},
 					},
 				},
-				{
-					displayName: 'Copy to LVS',
-					name: 'copyToLVS',
-					type: 'boolean',
-					default: false,
-					description: 'Copy the message to the SmartSchool LVS (student tracking system)',
-					displayOptions: {
-						show: {
-							resource: ['message'],
+			{
+				displayName: 'Copy to LVS',
+				name: 'copyToLVS',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to copy the message to the SmartSchool LVS (student tracking system)',
+				displayOptions: {
+					show: {
+						resource: ['message'],
 							operation: ['sendMsg'],
 						},
 					},
@@ -1653,9 +1646,7 @@ export class SmartSchool implements INodeType {
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
-		const client = await getSmartSchoolClient.call(this);
-		const credentials = (await this.getCredentials('smartSchoolApi')) as IDataObject;
-		const accesscode = credentials.accesscode as string;
+		const { accesscode } = await getSmartSchoolCredentials.call(this);
 
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			const normalizeAndPush = (data: unknown) => {
@@ -1669,26 +1660,52 @@ export class SmartSchool implements INodeType {
 					return;
 				}
 
+				if (data === null || data === undefined) {
+					returnData.push({
+						json: {},
+						pairedItem: { item: itemIndex },
+					});
+					return;
+				}
+
+				if (typeof data !== 'object') {
+					returnData.push({
+						json: { value: data },
+						pairedItem: { item: itemIndex },
+					});
+					return;
+				}
+
 				returnData.push({
-					json: (data ?? {}) as IDataObject,
+					json: data as IDataObject,
 					pairedItem: { item: itemIndex },
 				});
 			};
-			const formatSmartschoolError = (error: unknown): string => {
-				if (error instanceof SmartschoolError) {
-					const code = Number((error as { code?: string | number }).code);
-					const mapped = SMARTSCHOOL_ERROR_CODES[code];
-					if (mapped) {
-						return `SmartSchool error ${code}: ${mapped}`;
-					}
-					return `SmartSchool error ${code}: ${error.message}`;
+			const maybeThrowSmartschoolError = (result: unknown) => {
+				const code =
+					typeof result === 'number'
+						? result
+						: typeof result === 'string' && /^\d+$/.test(result)
+							? Number(result)
+							: null;
+				if (code !== null && SMARTSCHOOL_ERROR_CODES[code]) {
+					throw new NodeOperationError(
+						this.getNode(),
+						`SmartSchool error ${code}: ${SMARTSCHOOL_ERROR_CODES[code]}`,
+						{ itemIndex },
+					);
 				}
-
-				if (error instanceof Error) {
-					return error.message;
-				}
-
-				return 'Unknown error';
+			};
+			const callMethod = async (
+				method: string,
+				params: Record<string, string | number | boolean>,
+			) => {
+				const result = await callSmartschoolSoap.call(this, method, {
+					accesscode,
+					...params,
+				});
+				maybeThrowSmartschoolError(result);
+				return result;
 			};
 
 			try {
@@ -1702,43 +1719,27 @@ export class SmartSchool implements INodeType {
 					const code = this.getNodeParameter('code', itemIndex) as string;
 					const recursive = this.getNodeParameter('recursive', itemIndex, false) as boolean;
 					const recursiveFlag = recursive ? '1' : '0';
-					const params = {
-						accesscode,
-						code,
-						recursive: recursiveFlag,
-					};
-
-					const response =
-						operation === 'getAllAccounts'
-							? await client.getAllAccounts(params)
-							: await client.getAllAccountsExtended(params);
-
-					if (Array.isArray(response)) {
-						for (const entry of response) {
-							returnData.push({
-								json: entry as IDataObject,
-								pairedItem: { item: itemIndex },
-							});
-						}
-					} else {
-						returnData.push({
-							json: response as IDataObject,
-							pairedItem: { item: itemIndex },
-						});
-					}
+					const response = await callMethod(
+						operation === 'getAllAccounts' ? 'getAllAccounts' : 'getAllAccountsExtended',
+						{
+							code,
+							recursive: recursiveFlag,
+						},
+					);
+					normalizeAndPush(response);
 
 					continue;
 				}
 
 				if (resource === 'group') {
 					if (operation === 'getAllGroupsAndClasses') {
-						const response = await client.getAllGroupsAndClasses();
+						const response = await callMethod('getAllGroupsAndClasses', {});
 						normalizeAndPush(response);
 						continue;
 					}
 
 					if (operation === 'getClassList') {
-						const response = (await client.getClassList()) as string;
+						const response = await callMethod('getClassList', {});
 						returnData.push({
 							json: { csv: response },
 							pairedItem: { item: itemIndex },
@@ -1747,17 +1748,14 @@ export class SmartSchool implements INodeType {
 					}
 
 					if (operation === 'getClassListJson') {
-						const response = await client.getClassListJson();
+						const response = await callMethod('getClassListJson', {});
 						normalizeAndPush(response);
 						continue;
 					}
 
 					if (operation === 'getClassTeachers') {
 						const getAllOwners = this.getNodeParameter('getAllOwners', itemIndex, false) as boolean;
-						const response = await client.getClassTeachers({
-							accesscode,
-							getAllOwners,
-						});
+						const response = await callMethod('getClassTeachers', { getAllOwners });
 						normalizeAndPush(response);
 						continue;
 					}
@@ -1766,15 +1764,11 @@ export class SmartSchool implements INodeType {
 						const code = this.getNodeParameter('code', itemIndex) as string;
 						const visibility = this.getNodeParameter('groupVisibility', itemIndex) as number;
 						// WSDL parameter is misspelled as "visbility".
-						const response = await callSmartschoolSoap.call(this, 'changeGroupVisibility', {
-							accesscode,
+						const response = await callMethod('changeGroupVisibility', {
 							code,
 							visbility: visibility,
 						});
-						returnData.push({
-							json: { xml: response },
-							pairedItem: { item: itemIndex },
-						});
+						normalizeAndPush(response);
 						continue;
 					}
 
@@ -1784,7 +1778,6 @@ export class SmartSchool implements INodeType {
 						const optional = (details.optional ?? {}) as IDataObject;
 
 						const payload: IDataObject = {
-							accesscode,
 							name: required.name as string,
 							desc: required.desc as string,
 							code: required.code as string,
@@ -1806,8 +1799,8 @@ export class SmartSchool implements INodeType {
 
 						const response =
 							operation === 'saveGroup'
-								? await client.saveGroup(payload as never)
-								: await client.saveClass(payload as never);
+								? await callMethod('saveGroup', payload as Record<string, string | number | boolean>)
+								: await callMethod('saveClass', payload as Record<string, string | number | boolean>);
 
 						returnData.push({
 							json: { success: response },
@@ -1821,14 +1814,16 @@ export class SmartSchool implements INodeType {
 						const classCode = this.getNodeParameter('classCode', itemIndex) as string;
 						const officialDate = this.getNodeParameter('officialDate', itemIndex, '') as string;
 						const payload: IDataObject = {
-							accesscode,
 							userIdentifier,
 							class: classCode,
 						};
 						if (officialDate) {
 							payload.officialDate = officialDate;
 						}
-						const response = await client.saveUserToClass(payload as never);
+						const response = await callMethod(
+							'saveUserToClass',
+							payload as Record<string, string | number | boolean>,
+						);
 						returnData.push({
 							json: { success: response },
 							pairedItem: { item: itemIndex },
@@ -1841,14 +1836,16 @@ export class SmartSchool implements INodeType {
 						const classCode = this.getNodeParameter('classCode', itemIndex) as string;
 						const officialDate = this.getNodeParameter('officialDate', itemIndex, '') as string;
 						const payload: IDataObject = {
-							accesscode,
 							userIdentifier,
 							class: classCode,
 						};
 						if (officialDate) {
 							payload.officialDate = officialDate;
 						}
-						const response = await client.removeUserFromGroup(payload as never);
+						const response = await callMethod(
+							'removeUserFromGroup',
+							payload as Record<string, string | number | boolean>,
+						);
 						returnData.push({
 							json: { success: response },
 							pairedItem: { item: itemIndex },
@@ -1858,10 +1855,7 @@ export class SmartSchool implements INodeType {
 
 					if (operation === 'delClass') {
 						const classCode = this.getNodeParameter('classCode', itemIndex) as string;
-						const response = await client.delClass({
-							accesscode,
-							code: classCode,
-						});
+						const response = await callMethod('delClass', { code: classCode });
 						returnData.push({
 							json: { success: response },
 							pairedItem: { item: itemIndex },
@@ -1871,30 +1865,21 @@ export class SmartSchool implements INodeType {
 
 					if (operation === 'saveClassList') {
 						const serializedList = this.getNodeParameter('classListCsv', itemIndex) as string;
-						const response = await client.saveClassList({
-							accesscode,
-							serializedList,
-						});
+						const response = await callMethod('saveClassList', { serializedList });
 						normalizeAndPush(response);
 						continue;
 					}
 
 					if (operation === 'saveClassListJson') {
 						const jsonList = this.getNodeParameter('classListJson', itemIndex) as string;
-						const response = await client.saveClassListJson({
-							accesscode,
-							jsonList,
-						});
+						const response = await callMethod('saveClassListJson', { jsonList });
 						normalizeAndPush(response);
 						continue;
 					}
 
 					if (operation === 'getSchoolyearDataOfClass') {
 						const classCode = this.getNodeParameter('classCode', itemIndex) as string;
-						const response = await client.getSchoolyearDataOfClass({
-							accesscode,
-							classCode,
-						});
+						const response = await callMethod('getSchoolyearDataOfClass', { classCode });
 						normalizeAndPush(response);
 						continue;
 					}
@@ -1914,8 +1899,7 @@ export class SmartSchool implements INodeType {
 						const domain = this.getNodeParameter('domain', itemIndex) as string;
 						const principal = this.getNodeParameter('principal', itemIndex) as string;
 
-						const response = await client.saveSchoolyearDataOfClass({
-							accesscode,
+						const response = await callMethod('saveSchoolyearDataOfClass', {
 							classCode,
 							date,
 							instituteNumber,
@@ -1932,7 +1916,7 @@ export class SmartSchool implements INodeType {
 					}
 
 					if (operation === 'getSkoreClassTeacherCourseRelation') {
-						const response = await client.getSkoreClassTeacherCourseRelation();
+						const response = await callMethod('getSkoreClassTeacherCourseRelation', {});
 						normalizeAndPush(response);
 						continue;
 					}
@@ -1941,13 +1925,15 @@ export class SmartSchool implements INodeType {
 						const groupCode = this.getNodeParameter('code', itemIndex) as string;
 						const officialDate = this.getNodeParameter('officialDate', itemIndex, '') as string;
 						const payload: IDataObject = {
-							accesscode,
 							group: groupCode,
 						};
 						if (officialDate) {
 							payload.officialDate = officialDate;
 						}
-						const response = await client.clearGroup(payload as never);
+						const response = await callMethod(
+							'clearGroup',
+							payload as Record<string, string | number | boolean>,
+						);
 						returnData.push({
 							json: { success: response },
 							pairedItem: { item: itemIndex },
@@ -1959,13 +1945,15 @@ export class SmartSchool implements INodeType {
 						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
 						const officialDate = this.getNodeParameter('officialDate', itemIndex, '') as string;
 						const payload: IDataObject = {
-							accesscode,
 							userIdentifier,
 						};
 						if (officialDate) {
 							payload.officialDate = officialDate;
 						}
-						const response = await client.unregisterStudent(payload as never);
+						const response = await callMethod(
+							'unregisterStudent',
+							payload as Record<string, string | number | boolean>,
+						);
 						returnData.push({
 							json: { success: response },
 							pairedItem: { item: itemIndex },
@@ -1977,40 +1965,28 @@ export class SmartSchool implements INodeType {
 				if (resource === 'account') {
 					if (operation === 'getUserDetails') {
 						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
-						const response = await client.getUserDetails({
-							accesscode,
-							userIdentifier,
-						});
+						const response = await callMethod('getUserDetails', { userIdentifier });
 						normalizeAndPush(response);
 						continue;
 					}
 
 					if (operation === 'getUserDetailsByNumber') {
 						const number = this.getNodeParameter('internalNumber', itemIndex) as string;
-						const response = await client.getUserDetailsByNumber({
-							accesscode,
-							number,
-						});
+						const response = await callMethod('getUserDetailsByNumber', { number });
 						normalizeAndPush(response);
 						continue;
 					}
 
 					if (operation === 'getUserDetailsByUsername') {
 						const username = this.getNodeParameter('accountUsername', itemIndex) as string;
-						const response = await client.getUserDetailsByUsername({
-							accesscode,
-							username,
-						});
+						const response = await callMethod('getUserDetailsByUsername', { username });
 						normalizeAndPush(response);
 						continue;
 					}
 
 					if (operation === 'getUserDetailsByScannableCode') {
 						const scannableCode = this.getNodeParameter('scannableCode', itemIndex) as string;
-						const response = await client.getUserDetailsByScannableCode({
-							accesscode,
-							scannableCode,
-						});
+						const response = await callMethod('getUserDetailsByScannableCode', { scannableCode });
 						normalizeAndPush(response);
 						continue;
 					}
@@ -2021,11 +1997,7 @@ export class SmartSchool implements INodeType {
 							(this.getNodeParameter('officialClassDate', itemIndex, '') as string) ||
 							new Date().toISOString().slice(0, 10);
 
-						const response = await client.getUserOfficialClass({
-							accesscode,
-							userIdentifier,
-							date,
-						});
+						const response = await callMethod('getUserOfficialClass', { userIdentifier, date });
 						normalizeAndPush(response);
 						continue;
 					}
@@ -2041,26 +2013,51 @@ export class SmartSchool implements INodeType {
 						if (customFieldsRaw) {
 							try {
 								customFields = JSON.parse(customFieldsRaw) as IDataObject;
-							} catch (error) {
-								throw new NodeOperationError(
-									this.getNode(),
-									'Custom fields must be valid JSON.',
+						} catch {
+							throw new NodeOperationError(
+								this.getNode(),
+								'Custom fields must be valid JSON.',
 									{ itemIndex },
 								);
 							}
 						}
 
-						const payload: IDataObject = {
-							accesscode,
+						const payload: Record<string, string | number | boolean> = {
 							username: required.username as string,
 							name: required.name as string,
 							surname: required.surname as string,
 							basisrol: required.basisrol as string,
-							...optional,
-							...customFields,
 						};
 
-						const response = await client.saveUser(payload as never);
+						const addIfValue = (key: string, value?: unknown) => {
+							if (value !== undefined && value !== null && value !== '') {
+								payload[key] = value as string;
+							}
+						};
+
+						addIfValue('passwd1', optional.passwd1);
+						addIfValue('passwd2', optional.passwd2);
+						addIfValue('passwd3', optional.passwd3);
+						addIfValue('internnumber', optional.internnumber);
+						addIfValue('extranames', optional.extranames);
+						addIfValue('initials', optional.initials);
+						addIfValue('sex', optional.sex);
+						addIfValue('birthday', optional.birthdate);
+						addIfValue('birthplace', optional.birthcity);
+						addIfValue('birthcountry', optional.birthcountry);
+						addIfValue('address', optional.address);
+						addIfValue('postalcode', optional.postalcode);
+						addIfValue('location', optional.city);
+						addIfValue('country', optional.country);
+						addIfValue('email', optional.email);
+						addIfValue('mobilephone', optional.mobile);
+						addIfValue('homephone', optional.phone);
+
+						for (const [key, value] of Object.entries(customFields)) {
+							addIfValue(key, value);
+						}
+
+						const response = await callMethod('saveUser', payload);
 						returnData.push({
 							json: { success: response },
 							pairedItem: { item: itemIndex },
@@ -2071,14 +2068,13 @@ export class SmartSchool implements INodeType {
 					if (operation === 'delUser') {
 						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
 						const officialDate = this.getNodeParameter('officialDate', itemIndex, '') as string;
-						const payload: IDataObject = {
-							accesscode,
+						const payload: Record<string, string | number | boolean> = {
 							userIdentifier,
 						};
 						if (officialDate) {
 							payload.officialDate = officialDate;
 						}
-						const response = await client.delUser(payload as never);
+						const response = await callMethod('delUser', payload);
 						returnData.push({
 							json: { success: response },
 							pairedItem: { item: itemIndex },
@@ -2089,11 +2085,7 @@ export class SmartSchool implements INodeType {
 					if (operation === 'setAccountStatus') {
 						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
 						const accountStatus = this.getNodeParameter('accountStatus', itemIndex) as string;
-						const response = await client.setAccountStatus({
-							accesscode,
-							userIdentifier,
-							accountStatus,
-						});
+						const response = await callMethod('setAccountStatus', { userIdentifier, accountStatus });
 						returnData.push({
 							json: { success: response },
 							pairedItem: { item: itemIndex },
@@ -2104,11 +2096,7 @@ export class SmartSchool implements INodeType {
 					if (operation === 'changeUsername') {
 						const internNumber = this.getNodeParameter('internalNumber', itemIndex) as string;
 						const newUsername = this.getNodeParameter('newUsername', itemIndex) as string;
-						const response = await client.changeUsername({
-							accesscode,
-							internNumber,
-							newUsername,
-						});
+						const response = await callMethod('changeUsername', { internNumber, newUsername });
 						returnData.push({
 							json: { success: response },
 							pairedItem: { item: itemIndex },
@@ -2119,11 +2107,7 @@ export class SmartSchool implements INodeType {
 					if (operation === 'changeInternNumber') {
 						const username = this.getNodeParameter('accountUsername', itemIndex) as string;
 						const newInternNumber = this.getNodeParameter('newInternNumber', itemIndex) as string;
-						const response = await client.changeInternNumber({
-							accesscode,
-							username,
-							newInternNumber,
-						});
+						const response = await callMethod('changeInternNumber', { username, newInternNumber });
 						returnData.push({
 							json: { success: response },
 							pairedItem: { item: itemIndex },
@@ -2134,8 +2118,7 @@ export class SmartSchool implements INodeType {
 					if (operation === 'changePasswordAtNextLogin') {
 						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
 						const accountType = this.getNodeParameter('accountType', itemIndex) as number;
-						const response = await client.changePasswordAtNextLogin({
-							accesscode,
+						const response = await callMethod('changePasswordAtNextLogin', {
 							userIdentifier,
 							accountType,
 						});
@@ -2149,11 +2132,7 @@ export class SmartSchool implements INodeType {
 					if (operation === 'forcePasswordReset') {
 						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
 						const accountType = this.getNodeParameter('accountType', itemIndex) as number;
-						const response = await client.forcePasswordReset({
-							accesscode,
-							userIdentifier,
-							accountType,
-						});
+						const response = await callMethod('forcePasswordReset', { userIdentifier, accountType });
 						returnData.push({
 							json: { success: response },
 							pairedItem: { item: itemIndex },
@@ -2164,11 +2143,7 @@ export class SmartSchool implements INodeType {
 					if (operation === 'replaceInum') {
 						const oldInum = this.getNodeParameter('oldInum', itemIndex) as string;
 						const newInum = this.getNodeParameter('newInum', itemIndex) as string;
-						const response = await client.replaceInum({
-							accesscode,
-							oldInum,
-							newInum,
-						});
+						const response = await callMethod('replaceInum', { oldInum, newInum });
 						returnData.push({
 							json: { success: response },
 							pairedItem: { item: itemIndex },
@@ -2180,10 +2155,9 @@ export class SmartSchool implements INodeType {
 						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
 						const paramName = this.getNodeParameter('paramName', itemIndex) as string;
 						const paramValue = this.getNodeParameter('paramValue', itemIndex) as string;
-						const response = await client.saveUserParameter({
-							accesscode,
+						const response = await callMethod('saveUserParameter', {
 							userIdentifier,
-							paramName: paramName as never,
+							paramName,
 							paramValue,
 						});
 						returnData.push({
@@ -2196,11 +2170,7 @@ export class SmartSchool implements INodeType {
 					if (operation === 'removeCoAccount') {
 						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
 						const accountType = this.getNodeParameter('accountType', itemIndex) as number;
-						const response = await client.removeCoAccount({
-							accesscode,
-							userIdentifier,
-							accountType,
-						});
+						const response = await callMethod('removeCoAccount', { userIdentifier, accountType });
 						returnData.push({
 							json: { success: response },
 							pairedItem: { item: itemIndex },
@@ -2213,8 +2183,7 @@ export class SmartSchool implements INodeType {
 						const accountType = this.getNodeParameter('accountType', itemIndex) as number;
 						const password = this.getNodeParameter('password', itemIndex) as string;
 						const mustChangePassword = this.getNodeParameter('mustChangePassword', itemIndex) as boolean;
-						const response = await client.savePassword({
-							accesscode,
+						const response = await callMethod('savePassword', {
 							userIdentifier,
 							accountType,
 							password,
@@ -2230,8 +2199,7 @@ export class SmartSchool implements INodeType {
 					if (operation === 'deactivateTwoFactorAuthentication') {
 						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
 						const accountType = this.getNodeParameter('accountType', itemIndex) as number;
-						const response = await client.deactivateTwoFactorAuthentication({
-							accesscode,
+						const response = await callMethod('deactivateTwoFactorAuthentication', {
 							userIdentifier,
 							accountType,
 						});
@@ -2249,36 +2217,36 @@ export class SmartSchool implements INodeType {
 						const schoolYear = this.getNodeParameter('schoolYear', itemIndex) as string;
 						const response =
 							operation === 'getAbsents'
-								? await client.getAbsents({ accesscode, userIdentifier, schoolYear })
-								: await client.getAbsentsWithAlias({ accesscode, userIdentifier, schoolYear });
+								? await callMethod('getAbsents', { userIdentifier, schoolYear })
+								: await callMethod('getAbsentsWithAlias', { userIdentifier, schoolYear });
 						normalizeAndPush(response);
 						continue;
 					}
 
 					if (operation === 'getAbsentsByDate') {
 						const date = this.getNodeParameter('absenceDate', itemIndex) as string;
-						const response = await client.getAbsentsByDate({ accesscode, date });
+						const response = await callMethod('getAbsentsByDate', { date });
 						normalizeAndPush(response);
 						continue;
 					}
 
 					if (operation === 'getAbsentsWithAliasByDate') {
 						const date = this.getNodeParameter('absenceDate', itemIndex) as string;
-						const response = await client.getAbsentsWithAliasByDate({ accesscode, date });
+						const response = await callMethod('getAbsentsWithAliasByDate', { date });
 						normalizeAndPush(response);
 						continue;
 					}
 
 					if (operation === 'getAbsentsWithInternalNumberByDate') {
 						const date = this.getNodeParameter('absenceDate', itemIndex) as string;
-						const response = await client.getAbsentsWithInternalNumberByDate({ accesscode, date });
+						const response = await callMethod('getAbsentsWithInternalNumberByDate', { date });
 						normalizeAndPush(response);
 						continue;
 					}
 
 					if (operation === 'getAbsentsWithUsernameByDate') {
 						const date = this.getNodeParameter('absenceDate', itemIndex) as string;
-						const response = await client.getAbsentsWithUsernameByDate({ accesscode, date });
+						const response = await callMethod('getAbsentsWithUsernameByDate', { date });
 						normalizeAndPush(response);
 						continue;
 					}
@@ -2286,7 +2254,7 @@ export class SmartSchool implements INodeType {
 					if (operation === 'getAbsentsByDateAndGroup') {
 						const date = this.getNodeParameter('absenceDate', itemIndex) as string;
 						const code = this.getNodeParameter('code', itemIndex) as string;
-						const response = await client.getAbsentsByDateAndGroup({ accesscode, date, code });
+						const response = await callMethod('getAbsentsByDateAndGroup', { date, code });
 						normalizeAndPush(response);
 						continue;
 					}
@@ -2294,7 +2262,7 @@ export class SmartSchool implements INodeType {
 
 				if (resource === 'course') {
 					if (operation === 'getCourses') {
-						const response = await client.getCourses();
+						const response = await callMethod('getCourses', {});
 						returnData.push({
 							json: { csv: response },
 							pairedItem: { item: itemIndex },
@@ -2306,12 +2274,7 @@ export class SmartSchool implements INodeType {
 						const coursename = this.getNodeParameter('courseName', itemIndex) as string;
 						const coursedesc = this.getNodeParameter('courseCode', itemIndex) as string;
 						const visibility = this.getNodeParameter('courseVisibility', itemIndex) as number;
-						const response = await client.addCourse({
-							accesscode,
-							coursename,
-							coursedesc,
-							visibility,
-						} as never);
+						const response = await callMethod('addCourse', { coursename, coursedesc, visibility });
 						returnData.push({
 							json: { success: response },
 							pairedItem: { item: itemIndex },
@@ -2323,8 +2286,7 @@ export class SmartSchool implements INodeType {
 						const coursename = this.getNodeParameter('courseName', itemIndex) as string;
 						const coursedesc = this.getNodeParameter('courseCode', itemIndex) as string;
 						const groupIds = this.getNodeParameter('courseGroupIds', itemIndex) as string;
-						const response = await client.addCourseStudents({
-							accesscode,
+						const response = await callMethod('addCourseStudents', {
 							coursename,
 							coursedesc,
 							groupIds,
@@ -2344,12 +2306,11 @@ export class SmartSchool implements INodeType {
 							'courseTeacherInternNumber',
 							itemIndex,
 						) as string;
-						const response = await client.addCourseTeacher({
-							accesscode,
+						const response = await callMethod('addCourseTeacher', {
 							coursename,
 							coursedesc,
-							userIdentifier,
 							internnummer,
+							userlist: userIdentifier,
 						});
 						returnData.push({
 							json: { success: response },
@@ -2361,56 +2322,37 @@ export class SmartSchool implements INodeType {
 
 				if (resource === 'system') {
 					if (operation === 'startSkoreSync') {
-						const response = await client.startSkoreSync();
+						const response = await callMethod('startSkoreSync', {});
 						normalizeAndPush(response);
 						continue;
 					}
 
 					if (operation === 'checkStatus') {
 						const serviceId = this.getNodeParameter('serviceId', itemIndex) as string;
-						const response = await client.checkStatus({ accesscode, serviceId });
+						const response = await callMethod('checkStatus', { serviceId });
 						normalizeAndPush(response);
 						continue;
 					}
 
 					if (operation === 'getStudentCareer') {
 						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
-						const response = await client.getStudentCareer({ accesscode, userIdentifier });
+						const response = await callMethod('getStudentCareer', { userIdentifier });
 						normalizeAndPush(response);
 						continue;
 					}
 
 					if (operation === 'getDeliberationLines') {
 						const dateInSchoolYear = this.getNodeParameter('deliberationDate', itemIndex) as string;
-						const response = await callSmartschoolSoap.call(this, 'getDeliberationLines', {
-							accesscode,
-							dateInSchoolYear,
-						});
-						returnData.push({
-							json: { xml: response },
-							pairedItem: { item: itemIndex },
-						});
+						const response = await callMethod('getDeliberationLines', { dateInSchoolYear });
+						normalizeAndPush(response);
 						continue;
 					}
 				}
 
 				if (resource === 'helpdesk') {
 					if (operation === 'getHelpdeskMiniDbItems') {
-						const response = (await client.getHelpdeskMiniDbItems()) as unknown;
-
-						if (Array.isArray(response)) {
-							for (const entry of response) {
-								returnData.push({
-									json: entry as unknown as IDataObject,
-									pairedItem: { item: itemIndex },
-								});
-							}
-						} else {
-							returnData.push({
-								json: response as IDataObject,
-								pairedItem: { item: itemIndex },
-							});
-						}
+						const response = await callMethod('getHelpdeskMiniDbItems', {});
+						normalizeAndPush(response);
 
 						continue;
 					}
@@ -2422,22 +2364,18 @@ export class SmartSchool implements INodeType {
 						const miniDbItem = this.getNodeParameter('miniDbItem', itemIndex) as string;
 						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
 
-						const response = await client.addHelpdeskTicket({
-							accesscode,
+						const response = await callMethod('addHelpdeskTicket', {
 							title,
 							description,
 							priority,
 							miniDbItem,
 							userIdentifier,
 						});
-
-						const ticketResult =
-							typeof response === 'object' && response !== null
-								? (response as IDataObject)
-								: ({ success: response } as IDataObject);
-
 						returnData.push({
-							json: ticketResult,
+							json:
+								typeof response === 'object' && response !== null
+									? (response as IDataObject)
+									: ({ success: response } as IDataObject),
 							pairedItem: { item: itemIndex },
 						});
 
@@ -2454,8 +2392,7 @@ export class SmartSchool implements INodeType {
 					const copyToLVS = this.getNodeParameter('copyToLVS', itemIndex, false) as boolean;
 					const attachmentCollection = this.getNodeParameter('attachments', itemIndex, {}) as IDataObject;
 
-					const payload: IDataObject = {
-						accesscode,
+					const payload: Record<string, string | number | boolean> = {
 						userIdentifier,
 						title,
 						body,
@@ -2470,10 +2407,10 @@ export class SmartSchool implements INodeType {
 					);
 
 					if (cleanedAttachments.length) {
-						payload.attachments = cleanedAttachments;
+						payload.attachments = JSON.stringify(cleanedAttachments);
 					}
 
-					const response = await client.sendMsg(payload as never);
+					const response = await callMethod('sendMsg', payload);
 
 					returnData.push({
 						json: { success: response },
@@ -2487,8 +2424,7 @@ export class SmartSchool implements INodeType {
 					const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
 					const signature = this.getNodeParameter('signature', itemIndex) as string;
 					const accountType = this.getNodeParameter('signatureAccountType', itemIndex) as number;
-					const response = await client.saveSignature({
-						accesscode,
+					const response = await callMethod('saveSignature', {
 						userIdentifier,
 						accountType,
 						signature,
@@ -2501,7 +2437,7 @@ export class SmartSchool implements INodeType {
 				}
 
 				if (resource === 'parameter' && operation === 'getReferenceField') {
-					const response = await client.getReferenceField();
+					const response = await callMethod('getReferenceField', {});
 					normalizeAndPush(response);
 					continue;
 				}
@@ -2512,7 +2448,7 @@ export class SmartSchool implements INodeType {
 					{ itemIndex },
 				);
 			} catch (error) {
-				const errorMessage = formatSmartschoolError(error);
+				const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 				if (this.continueOnFail()) {
 					returnData.push({
 						json: {

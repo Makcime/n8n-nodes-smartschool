@@ -98,8 +98,8 @@ We will work resource-by-resource. Each row should end up in git history as its 
    - Offer `continueOnFail` with enriched context (operation, payload snippet).
 
 4. **Testing**  
-   - Use mocked SDK responses for unit tests.  
-   - Provide fixtures (JSON) that mimic the XML→JSON transformation described in the SDK docs.
+   - Use mocked SOAP responses for unit tests.  
+   - Provide fixtures (JSON) that mimic the XML→JSON transformation from the API.
 
 5. **Documentation**  
    - Each milestone should update `docs/` with usage notes and sample workflows.  
@@ -115,8 +115,8 @@ Use this table to keep status visible. Update `Status` column as work proceeds.
 | --- | --- | --- |
 | Icons renamed & cache-busting | ⏳ | Waiting for confirmation after next n8n restart |
 | Shared parameter descriptions | ⏳ | Shared option sets extracted |
-| Zod validation | ✅ | Credentials validated via schema |
-| Test harness | ✅ | Vitest config + basic unit test |
+| Credential validation | ✅ | Runtime check for API endpoint + access code |
+| Test harness | ⛳ | Not started (tests removed for verified packaging) |
 | Accounts detail operations | ✅ | Read + mutation operations available |
 | Helpdesk endpoints (list/create) | ✅ | `getHelpdeskMiniDbItems` + `addHelpdeskTicket` in SmartSchool node |
 | Messaging (sendMsg) | ✅ | Send SmartSchool messages incl. optional attachments |

@@ -8,6 +8,25 @@ export class SmartSchoolApi implements ICredentialType {
 	icon: Icon = { light: 'file:../icons/smartschool.logo.svg', dark: 'file:../icons/smartschool.logo.dark.svg' };
 
 	documentationUrl = 'https://schoolsync.gitbook.io/smartschool-kit';
+	test = {
+		request: {
+			method: 'POST' as const,
+			baseURL: '={{$credentials.apiEndpoint}}',
+			url: '',
+			headers: {
+				'Content-Type': 'text/xml; charset=utf-8',
+				SOAPAction: '={{$credentials.apiEndpoint}}#getReferenceField',
+			},
+			body:
+				'<?xml version="1.0" encoding="utf-8"?>' +
+				'<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" ' +
+				'xmlns:tns="={{$credentials.apiEndpoint}}">' +
+				'<soap:Body><tns:getReferenceField>' +
+				'<accesscode>{{$credentials.accesscode}}</accesscode>' +
+				'</tns:getReferenceField></soap:Body></soap:Envelope>',
+			json: false,
+		},
+	};
 
 	properties: INodeProperties[] = [
 		{

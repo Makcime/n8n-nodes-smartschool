@@ -1,31 +1,74 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
-// eslint-disable-next-line @n8n/community-nodes/no-restricted-imports
-import { SmartschoolClient } from '@abrianto/smartschool-kit';
-
-import { SmartSchoolCredentialsSchema } from './shared/schemas';
 
 const xmlEscape = (value: string) =>
 	value
 		.replace(/&/g, '&amp;')
 		.replace(/</g, '&lt;')
 		.replace(/>/g, '&gt;')
-		.replace(/\"/g, '&quot;')
+		.replace(/"/g, '&quot;')
 		.replace(/'/g, '&apos;');
 
-export async function getSmartSchoolClient(this: IExecuteFunctions) {
-	const credentials = (await this.getCredentials('smartSchoolApi')) as IDataObject;
-	const parsed = SmartSchoolCredentialsSchema.safeParse(credentials);
+const decodeXmlEntities = (value: string) =>
+	value
+		.replace(/&lt;/g, '<')
+		.replace(/&gt;/g, '>')
+		.replace(/&quot;/g, '"')
+		.replace(/&apos;/g, "'")
+		.replace(/&amp;/g, '&');
 
-	if (!parsed.success) {
-		const message = parsed.error.issues.map((err) => `${err.path.join('.')}: ${err.message}`).join('; ');
-		throw new NodeOperationError(this.getNode(), `Invalid SmartSchool credentials: ${message}`);
+const parseSoapResponse = (xml: string) => {
+	const faultMatch = xml.match(/<faultstring[^>]*>([\s\S]*?)<\/faultstring>/i);
+	if (faultMatch?.[1]) {
+		const message = decodeXmlEntities(faultMatch[1].trim());
+		throw new Error(message);
 	}
 
-	return new SmartschoolClient({
-		apiEndpoint: parsed.data.apiEndpoint,
-		accesscode: parsed.data.accesscode,
-	});
+	const returnMatch = xml.match(/<return[^>]*>([\s\S]*?)<\/return>/i);
+	if (!returnMatch?.[1]) {
+		return xml;
+	}
+
+	const rawValue = decodeXmlEntities(returnMatch[1]).trim();
+	if (rawValue === '') {
+		return '';
+	}
+
+	if (rawValue === 'true' || rawValue === 'false') {
+		return rawValue === 'true';
+	}
+
+	if (/^-?\d+(\.\d+)?$/.test(rawValue)) {
+		return Number(rawValue);
+	}
+
+	if (
+		(rawValue.startsWith('{') && rawValue.endsWith('}')) ||
+		(rawValue.startsWith('[') && rawValue.endsWith(']'))
+	) {
+		try {
+			return JSON.parse(rawValue);
+		} catch {
+			return rawValue;
+		}
+	}
+
+	return rawValue;
+};
+
+export async function getSmartSchoolCredentials(this: IExecuteFunctions) {
+	const credentials = (await this.getCredentials('smartSchoolApi')) as IDataObject;
+	const apiEndpoint = credentials?.apiEndpoint as string | undefined;
+	const accesscode = credentials?.accesscode as string | undefined;
+
+	if (!apiEndpoint || !accesscode) {
+		throw new NodeOperationError(
+			this.getNode(),
+			'SmartSchool credentials are not configured correctly.',
+		);
+	}
+
+	return { apiEndpoint, accesscode };
 }
 
 export async function callSmartschoolSoap(
@@ -33,15 +76,7 @@ export async function callSmartschoolSoap(
 	method: string,
 	params: Record<string, string | number | boolean>,
 ) {
-	const credentials = (await this.getCredentials('smartSchoolApi')) as IDataObject;
-	const parsed = SmartSchoolCredentialsSchema.safeParse(credentials);
-
-	if (!parsed.success) {
-		const message = parsed.error.issues.map((err) => `${err.path.join('.')}: ${err.message}`).join('; ');
-		throw new NodeOperationError(this.getNode(), `Invalid SmartSchool credentials: ${message}`);
-	}
-
-	const apiEndpoint = parsed.data.apiEndpoint;
+	const { apiEndpoint } = await getSmartSchoolCredentials.call(this);
 	const namespace = apiEndpoint;
 	const paramXml = Object.entries(params)
 		.map(([key, value]) => `<${key}>${xmlEscape(String(value))}</${key}>`)
@@ -62,5 +97,5 @@ export async function callSmartschoolSoap(
 		},
 		body: envelope,
 		json: false,
-	});
+	}).then(parseSoapResponse);
 }

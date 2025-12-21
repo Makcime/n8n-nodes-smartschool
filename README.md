@@ -2,7 +2,7 @@
 
 This repository contains the SmartSchool community node for n8n. It lets you work with your SmartSchool tenant (accounts, helpdesk, messaging) directly from any workflow.
 
-[SmartSchool](https://www.smartschool.be/) est la plateforme numérique utilisée par de nombreuses écoles francophones pour la communication, les cours et le suivi administratif. Ce paquet exploite le SDK `@abrianto/smartschool-kit` pour exposer ses API dans n8n.
+[SmartSchool](https://www.smartschool.be/) est la plateforme numérique utilisée par de nombreuses écoles francophones pour la communication, les cours et le suivi administratif. Ce paquet expose les API SmartSchool via SOAP dans n8n.
 
 [n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
 
@@ -61,7 +61,6 @@ Every operation honours `Continue On Fail`, so you can branch on success/error o
 
 ## Resources
 
-- [SmartSchool Kit SDK](https://github.com/abrianto/smartschool-kit)
 - [SmartSchool API documentation](https://schoolsync.gitbook.io/smartschool-kit)
 - [n8n community nodes docs](https://docs.n8n.io/integrations/#community-nodes)
 
