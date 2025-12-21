@@ -2,7 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SmartSchool = void 0;
 const n8n_workflow_1 = require("n8n-workflow");
+const smartschool_kit_1 = require("@abrianto/smartschool-kit");
 const GenericFunctions_1 = require("./GenericFunctions");
+const errorCodes_1 = require("./shared/errorCodes");
 class SmartSchool {
     constructor() {
         this.description = {
@@ -1553,6 +1555,20 @@ class SmartSchool {
                     pairedItem: { item: itemIndex },
                 });
             };
+            const formatSmartschoolError = (error) => {
+                if (error instanceof smartschool_kit_1.SmartschoolError) {
+                    const code = Number(error.code);
+                    const mapped = errorCodes_1.SMARTSCHOOL_ERROR_CODES[code];
+                    if (mapped) {
+                        return `SmartSchool error ${code}: ${mapped}`;
+                    }
+                    return `SmartSchool error ${code}: ${error.message}`;
+                }
+                if (error instanceof Error) {
+                    return error.message;
+                }
+                return 'Unknown error';
+            };
             try {
                 const resource = this.getNodeParameter('resource', itemIndex);
                 const operation = this.getNodeParameter('operation', itemIndex);
@@ -2233,10 +2249,11 @@ class SmartSchool {
                 throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Unsupported resource "${resource}" or operation "${operation}"`, { itemIndex });
             }
             catch (error) {
+                const errorMessage = formatSmartschoolError(error);
                 if (this.continueOnFail()) {
                     returnData.push({
                         json: {
-                            error: error instanceof Error ? error.message : 'Unknown error',
+                            error: errorMessage,
                         },
                         pairedItem: { item: itemIndex },
                     });
@@ -2245,7 +2262,7 @@ class SmartSchool {
                 if (error instanceof n8n_workflow_1.NodeOperationError) {
                     throw error;
                 }
-                throw new n8n_workflow_1.NodeOperationError(this.getNode(), error, { itemIndex });
+                throw new n8n_workflow_1.NodeOperationError(this.getNode(), errorMessage, { itemIndex });
             }
         }
         return [returnData];

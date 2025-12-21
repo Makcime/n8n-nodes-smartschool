@@ -7,7 +7,10 @@ import type {
 } from 'n8n-workflow';
 import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
+import { SmartschoolError } from '@abrianto/smartschool-kit';
+
 import { getSmartSchoolClient } from './GenericFunctions';
+import { SMARTSCHOOL_ERROR_CODES } from './shared/errorCodes';
 
 type SupportedResource =
 	| 'group'
@@ -1625,6 +1628,22 @@ export class SmartSchool implements INodeType {
 					pairedItem: { item: itemIndex },
 				});
 			};
+			const formatSmartschoolError = (error: unknown): string => {
+				if (error instanceof SmartschoolError) {
+					const code = Number((error as { code?: string | number }).code);
+					const mapped = SMARTSCHOOL_ERROR_CODES[code];
+					if (mapped) {
+						return `SmartSchool error ${code}: ${mapped}`;
+					}
+					return `SmartSchool error ${code}: ${error.message}`;
+				}
+
+				if (error instanceof Error) {
+					return error.message;
+				}
+
+				return 'Unknown error';
+			};
 
 			try {
 				const resource = this.getNodeParameter('resource', itemIndex) as SupportedResource;
@@ -2403,10 +2422,11 @@ export class SmartSchool implements INodeType {
 					{ itemIndex },
 				);
 			} catch (error) {
+				const errorMessage = formatSmartschoolError(error);
 				if (this.continueOnFail()) {
 					returnData.push({
 						json: {
-							error: error instanceof Error ? error.message : 'Unknown error',
+							error: errorMessage,
 						},
 						pairedItem: { item: itemIndex },
 					});
@@ -2417,7 +2437,7 @@ export class SmartSchool implements INodeType {
 					throw error;
 				}
 
-				throw new NodeOperationError(this.getNode(), error as Error, { itemIndex });
+				throw new NodeOperationError(this.getNode(), errorMessage, { itemIndex });
 			}
 		}
 
