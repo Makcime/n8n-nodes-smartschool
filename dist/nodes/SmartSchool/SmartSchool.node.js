@@ -179,6 +179,12 @@ class SmartSchool {
                             description: 'Set a new password for a user account',
                             action: 'Save password',
                         },
+                        {
+                            name: 'Deactivate Two-Factor Authentication',
+                            value: 'deactivateTwoFactorAuthentication',
+                            description: 'Deprecated SmartSchool method to disable 2FA',
+                            action: 'Deactivate two-factor authentication',
+                        },
                     ],
                 },
                 {
@@ -305,6 +311,12 @@ class SmartSchool {
                             description: 'Retrieve student career history',
                             action: 'Get student career',
                         },
+                        {
+                            name: 'Get Deliberation Lines',
+                            value: 'getDeliberationLines',
+                            description: 'Retrieve deliberation lines for a date in the school year',
+                            action: 'Get deliberation lines',
+                        },
                     ],
                 },
                 {
@@ -354,6 +366,12 @@ class SmartSchool {
                             value: 'getClassTeachers',
                             description: 'List titular teachers per class',
                             action: 'Get class teachers',
+                        },
+                        {
+                            name: 'Change Group Visibility',
+                            value: 'changeGroupVisibility',
+                            description: 'Toggle visibility of a group or class',
+                            action: 'Change group visibility',
                         },
                         {
                             name: 'Save Group',
@@ -516,6 +534,7 @@ class SmartSchool {
                                 'getAllAccountsExtended',
                                 'getAbsentsByDateAndGroup',
                                 'clearGroup',
+                                'changeGroupVisibility',
                             ],
                         },
                     },
@@ -543,6 +562,23 @@ class SmartSchool {
                         show: {
                             resource: ['group'],
                             operation: ['getClassTeachers'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Group Visibility',
+                    name: 'groupVisibility',
+                    type: 'options',
+                    options: [
+                        { name: 'Visible', value: 1 },
+                        { name: 'Hidden', value: 0 },
+                    ],
+                    default: 1,
+                    description: 'Visibility status for the group/class',
+                    displayOptions: {
+                        show: {
+                            resource: ['group'],
+                            operation: ['changeGroupVisibility'],
                         },
                     },
                 },
@@ -866,6 +902,20 @@ class SmartSchool {
                     },
                 },
                 {
+                    displayName: 'Deliberation Date',
+                    name: 'deliberationDate',
+                    type: 'string',
+                    default: '',
+                    required: true,
+                    description: 'Date in the school year (YYYY-MM-DD)',
+                    displayOptions: {
+                        show: {
+                            resource: ['system'],
+                            operation: ['getDeliberationLines'],
+                        },
+                    },
+                },
+                {
                     displayName: 'Absence Date',
                     name: 'absenceDate',
                     type: 'string',
@@ -989,6 +1039,7 @@ class SmartSchool {
                                 'saveUserParameter',
                                 'removeCoAccount',
                                 'savePassword',
+                                'deactivateTwoFactorAuthentication',
                                 'saveUserToGroup',
                                 'removeUserFromGroup',
                                 'unregisterStudent',
@@ -1117,7 +1168,13 @@ class SmartSchool {
                     displayOptions: {
                         show: {
                             resource: ['account'],
-                            operation: ['changePasswordAtNextLogin', 'forcePasswordReset', 'removeCoAccount', 'savePassword'],
+                            operation: [
+                                'changePasswordAtNextLogin',
+                                'forcePasswordReset',
+                                'removeCoAccount',
+                                'savePassword',
+                                'deactivateTwoFactorAuthentication',
+                            ],
                         },
                     },
                 },
@@ -1629,6 +1686,20 @@ class SmartSchool {
                         normalizeAndPush(response);
                         continue;
                     }
+                    if (operation === 'changeGroupVisibility') {
+                        const code = this.getNodeParameter('code', itemIndex);
+                        const visibility = this.getNodeParameter('groupVisibility', itemIndex);
+                        const response = await GenericFunctions_1.callSmartschoolSoap.call(this, 'changeGroupVisibility', {
+                            accesscode,
+                            code,
+                            visbility: visibility,
+                        });
+                        returnData.push({
+                            json: { xml: response },
+                            pairedItem: { item: itemIndex },
+                        });
+                        continue;
+                    }
                     if (operation === 'saveGroup' || operation === 'saveClass') {
                         const details = this.getNodeParameter('groupClassDetails', itemIndex, {});
                         const required = ((_a = details.required) !== null && _a !== void 0 ? _a : {});
@@ -2031,6 +2102,20 @@ class SmartSchool {
                         });
                         continue;
                     }
+                    if (operation === 'deactivateTwoFactorAuthentication') {
+                        const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
+                        const accountType = this.getNodeParameter('accountType', itemIndex);
+                        const response = await client.deactivateTwoFactorAuthentication({
+                            accesscode,
+                            userIdentifier,
+                            accountType,
+                        });
+                        returnData.push({
+                            json: { success: response },
+                            pairedItem: { item: itemIndex },
+                        });
+                        continue;
+                    }
                 }
                 if (resource === 'absence') {
                     if (operation === 'getAbsents' || operation === 'getAbsentsWithAlias') {
@@ -2150,6 +2235,18 @@ class SmartSchool {
                         const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
                         const response = await client.getStudentCareer({ accesscode, userIdentifier });
                         normalizeAndPush(response);
+                        continue;
+                    }
+                    if (operation === 'getDeliberationLines') {
+                        const dateInSchoolYear = this.getNodeParameter('deliberationDate', itemIndex);
+                        const response = await GenericFunctions_1.callSmartschoolSoap.call(this, 'getDeliberationLines', {
+                            accesscode,
+                            dateInSchoolYear,
+                        });
+                        returnData.push({
+                            json: { xml: response },
+                            pairedItem: { item: itemIndex },
+                        });
                         continue;
                     }
                 }

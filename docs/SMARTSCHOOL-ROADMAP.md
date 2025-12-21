@@ -32,16 +32,16 @@ Below is the proposed mapping (✅ = implemented, ⏳ = in progress, ⛳ = plann
 
 | Bucket | Operations | Status |
 | --- | --- | --- |
-| **Accounts & Users** | getAllAccounts ✅, getAllAccountsExtended ✅, getUserDetails ✅, getUserDetailsByNumber ✅, getUserDetailsByUsername ✅, getUserDetailsByScannableCode ✅, getUserOfficialClass ✅, saveUser ✅, delUser ✅, setAccountStatus ✅, changeUsername ✅, changeInternNumber ✅, changePasswordAtNextLogin ✅, forcePasswordReset ✅, replaceInum ✅, saveUserParameter ✅, removeCoAccount ✅, savePassword ✅ | ⛳ |
-| **Groups & Classes** | getAllGroupsAndClasses ✅, getClassList ✅, getClassListJson ✅, getClassTeachers ✅, saveGroup ✅, saveClass ✅, saveUserToGroup ✅, removeUserFromGroup ✅, delClass ✅, saveClassList ✅, saveClassListJson ✅, getSchoolyearDataOfClass ✅, saveSchoolyearDataOfClass ✅, getSkoreClassTeacherCourseRelation ✅, clearGroup ✅, unregisterStudent ✅ | ⛳ |
+| **Accounts & Users** | getAllAccounts ✅, getAllAccountsExtended ✅, getUserDetails ✅, getUserDetailsByNumber ✅, getUserDetailsByUsername ✅, getUserDetailsByScannableCode ✅, getUserOfficialClass ✅, saveUser ✅, delUser ✅, setAccountStatus ✅, changeUsername ✅, changeInternNumber ✅, changePasswordAtNextLogin ✅, forcePasswordReset ✅, replaceInum ✅, saveUserParameter ✅, removeCoAccount ✅, savePassword ✅, deactivateTwoFactorAuthentication ✅ | ⛳ |
+| **Groups & Classes** | getAllGroupsAndClasses ✅, getClassList ✅, getClassListJson ✅, getClassTeachers ✅, changeGroupVisibility ✅, saveGroup ✅, saveClass ✅, saveUserToGroup ✅, removeUserFromGroup ✅, delClass ✅, saveClassList ✅, saveClassListJson ✅, getSchoolyearDataOfClass ✅, saveSchoolyearDataOfClass ✅, getSkoreClassTeacherCourseRelation ✅, clearGroup ✅, unregisterStudent ✅ | ⛳ |
 | **Absences** | getAbsents ✅, getAbsentsWithAlias ✅, getAbsentsByDate ✅, getAbsentsWithAliasByDate ✅, getAbsentsWithInternalNumberByDate ✅, getAbsentsWithUsernameByDate ✅, getAbsentsByDateAndGroup ✅ | ⛳ |
 | **Messages** | sendMsg ✅, saveSignature ✅ | ⛳ |
 | **Courses** | addCourse ✅, addCourseStudents ✅, addCourseTeacher ✅, getCourses ✅ | ⛳ |
 | **Helpdesk** | addHelpdeskTicket, getHelpdeskMiniDbItems | ⛳ |
 | **Parameters** | getReferenceField ✅, returnCsvErrorCodes, returnJsonErrorCodes | ⛳ |
-| **System** | startSkoreSync ✅, checkStatus ✅ | ⛳ |
+| **System** | startSkoreSync ✅, checkStatus ✅, getDeliberationLines ✅ | ⛳ |
 | **Student Career** | getStudentCareer ✅ | ⛳ |
-| **Deprecated** | deactivateTwoFactorAuthentication (skip, doc-only) | ❌ |
+| **Deprecated** | deactivateTwoFactorAuthentication ✅ (still available in WSDL) | ❌ |
 
 ---
 

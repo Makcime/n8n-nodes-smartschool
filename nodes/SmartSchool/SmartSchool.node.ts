@@ -9,7 +9,7 @@ import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 import { SmartschoolError } from '@abrianto/smartschool-kit';
 
-import { getSmartSchoolClient } from './GenericFunctions';
+import { callSmartschoolSoap, getSmartSchoolClient } from './GenericFunctions';
 import { SMARTSCHOOL_ERROR_CODES } from './shared/errorCodes';
 
 type SupportedResource =
@@ -74,7 +74,10 @@ type SupportedOperation =
 	| 'replaceInum'
 	| 'saveUserParameter'
 	| 'removeCoAccount'
-	| 'savePassword';
+	| 'savePassword'
+	| 'deactivateTwoFactorAuthentication'
+	| 'changeGroupVisibility'
+	| 'getDeliberationLines';
 
 export class SmartSchool implements INodeType {
 	description: INodeTypeDescription = {
@@ -249,6 +252,12 @@ export class SmartSchool implements INodeType {
 						description: 'Set a new password for a user account',
 						action: 'Save password',
 					},
+					{
+						name: 'Deactivate Two-Factor Authentication',
+						value: 'deactivateTwoFactorAuthentication',
+						description: 'Deprecated SmartSchool method to disable 2FA',
+						action: 'Deactivate two-factor authentication',
+					},
 				],
 			},
 			{
@@ -375,6 +384,12 @@ export class SmartSchool implements INodeType {
 						description: 'Retrieve student career history',
 						action: 'Get student career',
 					},
+					{
+						name: 'Get Deliberation Lines',
+						value: 'getDeliberationLines',
+						description: 'Retrieve deliberation lines for a date in the school year',
+						action: 'Get deliberation lines',
+					},
 				],
 			},
 			{
@@ -424,6 +439,12 @@ export class SmartSchool implements INodeType {
 						value: 'getClassTeachers',
 						description: 'List titular teachers per class',
 						action: 'Get class teachers',
+					},
+					{
+						name: 'Change Group Visibility',
+						value: 'changeGroupVisibility',
+						description: 'Toggle visibility of a group or class',
+						action: 'Change group visibility',
 					},
 					{
 						name: 'Save Group',
@@ -586,6 +607,7 @@ export class SmartSchool implements INodeType {
 							'getAllAccountsExtended',
 							'getAbsentsByDateAndGroup',
 							'clearGroup',
+							'changeGroupVisibility',
 						],
 					},
 				},
@@ -614,6 +636,23 @@ export class SmartSchool implements INodeType {
 					show: {
 						resource: ['group'],
 						operation: ['getClassTeachers'],
+					},
+				},
+			},
+			{
+				displayName: 'Group Visibility',
+				name: 'groupVisibility',
+				type: 'options',
+				options: [
+					{ name: 'Visible', value: 1 },
+					{ name: 'Hidden', value: 0 },
+				],
+				default: 1,
+				description: 'Visibility status for the group/class',
+				displayOptions: {
+					show: {
+						resource: ['group'],
+						operation: ['changeGroupVisibility'],
 					},
 				},
 			},
@@ -937,6 +976,20 @@ export class SmartSchool implements INodeType {
 				},
 			},
 			{
+				displayName: 'Deliberation Date',
+				name: 'deliberationDate',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Date in the school year (YYYY-MM-DD)',
+				displayOptions: {
+					show: {
+						resource: ['system'],
+						operation: ['getDeliberationLines'],
+					},
+				},
+			},
+			{
 				displayName: 'Absence Date',
 				name: 'absenceDate',
 				type: 'string',
@@ -1061,6 +1114,7 @@ export class SmartSchool implements INodeType {
 							'saveUserParameter',
 							'removeCoAccount',
 							'savePassword',
+							'deactivateTwoFactorAuthentication',
 							'saveUserToGroup',
 							'removeUserFromGroup',
 							'unregisterStudent',
@@ -1189,7 +1243,13 @@ export class SmartSchool implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['account'],
-						operation: ['changePasswordAtNextLogin', 'forcePasswordReset', 'removeCoAccount', 'savePassword'],
+						operation: [
+							'changePasswordAtNextLogin',
+							'forcePasswordReset',
+							'removeCoAccount',
+							'savePassword',
+							'deactivateTwoFactorAuthentication',
+						],
 					},
 				},
 			},
@@ -1716,6 +1776,22 @@ export class SmartSchool implements INodeType {
 						continue;
 					}
 
+					if (operation === 'changeGroupVisibility') {
+						const code = this.getNodeParameter('code', itemIndex) as string;
+						const visibility = this.getNodeParameter('groupVisibility', itemIndex) as number;
+						// WSDL parameter is misspelled as "visbility".
+						const response = await callSmartschoolSoap.call(this, 'changeGroupVisibility', {
+							accesscode,
+							code,
+							visbility: visibility,
+						});
+						returnData.push({
+							json: { xml: response },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
 					if (operation === 'saveGroup' || operation === 'saveClass') {
 						const details = this.getNodeParameter('groupClassDetails', itemIndex, {}) as IDataObject;
 						const required = (details.required ?? {}) as IDataObject;
@@ -2164,6 +2240,21 @@ export class SmartSchool implements INodeType {
 						});
 						continue;
 					}
+
+					if (operation === 'deactivateTwoFactorAuthentication') {
+						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
+						const accountType = this.getNodeParameter('accountType', itemIndex) as number;
+						const response = await client.deactivateTwoFactorAuthentication({
+							accesscode,
+							userIdentifier,
+							accountType,
+						});
+						returnData.push({
+							json: { success: response },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
 				}
 
 				if (resource === 'absence') {
@@ -2300,6 +2391,19 @@ export class SmartSchool implements INodeType {
 						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
 						const response = await client.getStudentCareer({ accesscode, userIdentifier });
 						normalizeAndPush(response);
+						continue;
+					}
+
+					if (operation === 'getDeliberationLines') {
+						const dateInSchoolYear = this.getNodeParameter('deliberationDate', itemIndex) as string;
+						const response = await callSmartschoolSoap.call(this, 'getDeliberationLines', {
+							accesscode,
+							dateInSchoolYear,
+						});
+						returnData.push({
+							json: { xml: response },
+							pairedItem: { item: itemIndex },
+						});
 						continue;
 					}
 				}
