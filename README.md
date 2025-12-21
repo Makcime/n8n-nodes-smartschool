@@ -31,6 +31,7 @@ All functionality is exposed by a single node named **SmartSchool**. It currentl
 | `Message` | `Send Message` | Send SmartSchool messages (main account or co-account) with optional attachments and LVS copy. |
 | `Account` | `Get User Details`, `Get User Details by Number`, `Get User Details by Username`, `Get User Details by Scannable Code`, `Get User Official Class` | Inspect any user profile via multiple identifiers and retrieve their official class assignment. |
 | `Parameter` | `Get Reference Field` | Fetch the platform reference field configuration and documentation. |
+| `Absence` | `Get Absents`, `Get Absents with Alias`, `Get Absents by Date`, `Get Absents with Alias by Date`, `Get Absents with Internal Number by Date`, `Get Absents with Username by Date`, `Get Absents by Date and Group` | Pull absence data by student, date, or class/group with optional alias labels. |
 
 Roadmap work (additional API coverage) is tracked in `docs/SMARTSCHOOL-ROADMAP.md`.
 

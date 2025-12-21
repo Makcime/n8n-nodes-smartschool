@@ -9,7 +9,7 @@ import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 import { getSmartSchoolClient } from './GenericFunctions';
 
-type SupportedResource = 'group' | 'helpdesk' | 'message' | 'account' | 'parameter';
+type SupportedResource = 'group' | 'helpdesk' | 'message' | 'account' | 'parameter' | 'absence';
 type SupportedOperation =
 	| 'getAllAccounts'
 	| 'getAllAccountsExtended'
@@ -25,7 +25,14 @@ type SupportedOperation =
 	| 'getUserDetailsByUsername'
 	| 'getUserDetailsByScannableCode'
 	| 'getUserOfficialClass'
-	| 'getReferenceField';
+	| 'getReferenceField'
+	| 'getAbsents'
+	| 'getAbsentsWithAlias'
+	| 'getAbsentsByDate'
+	| 'getAbsentsWithAliasByDate'
+	| 'getAbsentsWithInternalNumberByDate'
+	| 'getAbsentsWithUsernameByDate'
+	| 'getAbsentsByDateAndGroup';
 
 export class SmartSchool implements INodeType {
 	description: INodeTypeDescription = {
@@ -78,6 +85,10 @@ export class SmartSchool implements INodeType {
 						name: 'Parameter',
 						value: 'parameter',
 					},
+					{
+						name: 'Absence',
+						value: 'absence',
+					},
 				],
 			},
 			{
@@ -121,6 +132,62 @@ export class SmartSchool implements INodeType {
 						value: 'getUserOfficialClass',
 						description: 'Retrieve the official class for a user',
 						action: 'Get user official class',
+					},
+				],
+			},
+			{
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				default: 'getAbsents',
+				displayOptions: {
+					show: {
+						resource: ['absence'],
+					},
+				},
+				options: [
+					{
+						name: 'Get Absents',
+						value: 'getAbsents',
+						description: 'Get absences for a user and school year',
+						action: 'Get absents',
+					},
+					{
+						name: 'Get Absents with Alias',
+						value: 'getAbsentsWithAlias',
+						description: 'Get absences with alias labels for a user and school year',
+						action: 'Get absents with alias',
+					},
+					{
+						name: 'Get Absents by Date',
+						value: 'getAbsentsByDate',
+						description: 'Get absences for all students on a date',
+						action: 'Get absents by date',
+					},
+					{
+						name: 'Get Absents with Alias by Date',
+						value: 'getAbsentsWithAliasByDate',
+						description: 'Get absences with aliases for all students on a date',
+						action: 'Get absents with alias by date',
+					},
+					{
+						name: 'Get Absents with Internal Number by Date',
+						value: 'getAbsentsWithInternalNumberByDate',
+						description: 'Get absences indexed by internal number for a date',
+						action: 'Get absents by internal number',
+					},
+					{
+						name: 'Get Absents with Username by Date',
+						value: 'getAbsentsWithUsernameByDate',
+						description: 'Get absences indexed by username for a date',
+						action: 'Get absents by username',
+					},
+					{
+						name: 'Get Absents by Date and Group',
+						value: 'getAbsentsByDateAndGroup',
+						description: 'Get absences for a date filtered by group',
+						action: 'Get absents by date and group',
 					},
 				],
 			},
@@ -249,8 +316,12 @@ export class SmartSchool implements INodeType {
 				description: 'Unique code that identifies the class or group',
 				displayOptions: {
 					show: {
-						resource: ['group'],
-						operation: ['getAllAccounts', 'getAllAccountsExtended'],
+						resource: ['group', 'absence'],
+						operation: [
+							'getAllAccounts',
+							'getAllAccountsExtended',
+							'getAbsentsByDateAndGroup',
+						],
 					},
 				},
 			},
@@ -278,6 +349,40 @@ export class SmartSchool implements INodeType {
 					show: {
 						resource: ['group'],
 						operation: ['getClassTeachers'],
+					},
+				},
+			},
+			{
+				displayName: 'School Year',
+				name: 'schoolYear',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'School year to retrieve absences for (YYYY)',
+				displayOptions: {
+					show: {
+						resource: ['absence'],
+						operation: ['getAbsents', 'getAbsentsWithAlias'],
+					},
+				},
+			},
+			{
+				displayName: 'Absence Date',
+				name: 'absenceDate',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Date to retrieve absences for (YYYY-MM-DD)',
+				displayOptions: {
+					show: {
+						resource: ['absence'],
+						operation: [
+							'getAbsentsByDate',
+							'getAbsentsWithAliasByDate',
+							'getAbsentsWithInternalNumberByDate',
+							'getAbsentsWithUsernameByDate',
+							'getAbsentsByDateAndGroup',
+						],
 					},
 				},
 			},
@@ -370,12 +475,14 @@ export class SmartSchool implements INodeType {
 				description: 'Username or identifier of the ticket creator, recipient, or lookup target',
 				displayOptions: {
 					show: {
-						resource: ['helpdesk', 'message', 'account'],
+						resource: ['helpdesk', 'message', 'account', 'absence'],
 						operation: [
 							'addHelpdeskTicket',
 							'sendMsg',
 							'getUserDetails',
 							'getUserOfficialClass',
+							'getAbsents',
+							'getAbsentsWithAlias',
 						],
 					},
 				},
@@ -669,6 +776,55 @@ export class SmartSchool implements INodeType {
 							userIdentifier,
 							date,
 						});
+						normalizeAndPush(response);
+						continue;
+					}
+				}
+
+				if (resource === 'absence') {
+					if (operation === 'getAbsents' || operation === 'getAbsentsWithAlias') {
+						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
+						const schoolYear = this.getNodeParameter('schoolYear', itemIndex) as string;
+						const response =
+							operation === 'getAbsents'
+								? await client.getAbsents({ accesscode, userIdentifier, schoolYear })
+								: await client.getAbsentsWithAlias({ accesscode, userIdentifier, schoolYear });
+						normalizeAndPush(response);
+						continue;
+					}
+
+					if (operation === 'getAbsentsByDate') {
+						const date = this.getNodeParameter('absenceDate', itemIndex) as string;
+						const response = await client.getAbsentsByDate({ accesscode, date });
+						normalizeAndPush(response);
+						continue;
+					}
+
+					if (operation === 'getAbsentsWithAliasByDate') {
+						const date = this.getNodeParameter('absenceDate', itemIndex) as string;
+						const response = await client.getAbsentsWithAliasByDate({ accesscode, date });
+						normalizeAndPush(response);
+						continue;
+					}
+
+					if (operation === 'getAbsentsWithInternalNumberByDate') {
+						const date = this.getNodeParameter('absenceDate', itemIndex) as string;
+						const response = await client.getAbsentsWithInternalNumberByDate({ accesscode, date });
+						normalizeAndPush(response);
+						continue;
+					}
+
+					if (operation === 'getAbsentsWithUsernameByDate') {
+						const date = this.getNodeParameter('absenceDate', itemIndex) as string;
+						const response = await client.getAbsentsWithUsernameByDate({ accesscode, date });
+						normalizeAndPush(response);
+						continue;
+					}
+
+					if (operation === 'getAbsentsByDateAndGroup') {
+						const date = this.getNodeParameter('absenceDate', itemIndex) as string;
+						const code = this.getNodeParameter('code', itemIndex) as string;
+						const response = await client.getAbsentsByDateAndGroup({ accesscode, date, code });
 						normalizeAndPush(response);
 						continue;
 					}

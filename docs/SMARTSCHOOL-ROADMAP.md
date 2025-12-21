@@ -34,7 +34,7 @@ Below is the proposed mapping (✅ = implemented, ⏳ = in progress, ⛳ = plann
 | --- | --- | --- |
 | **Accounts & Users** | getAllAccounts ✅, getAllAccountsExtended ✅, getUserDetails ✅, getUserDetailsByNumber ✅, getUserDetailsByUsername ✅, getUserDetailsByScannableCode ✅, getUserOfficialClass ✅, saveUser, delUser, setAccountStatus, changeUsername, changeInternNumber, changePasswordAtNextLogin, forcePasswordReset, replaceInum, saveUserParameter, removeCoAccount, savePassword | ⛳ |
 | **Groups & Classes** | getAllGroupsAndClasses ✅, getClassList ✅, getClassListJson ✅, getClassTeachers ✅, saveGroup, saveClass, saveUserToGroup, removeUserFromGroup, delClass, saveClassList, saveClassListJson, getSchoolyearDataOfClass, saveSchoolyearDataOfClass, getSkoreClassTeacherCourseRelation, clearGroup, unregisterStudent | ⛳ |
-| **Absences** | getAbsents, getAbsentsWithAlias, getAbsentsByDate, getAbsentsWithAliasByDate, getAbsentsWithInternalNumberByDate, getAbsentsWithUsernameByDate, getAbsentsByDateAndGroup | ⛳ |
+| **Absences** | getAbsents ✅, getAbsentsWithAlias ✅, getAbsentsByDate ✅, getAbsentsWithAliasByDate ✅, getAbsentsWithInternalNumberByDate ✅, getAbsentsWithUsernameByDate ✅, getAbsentsByDateAndGroup ✅ | ⛳ |
 | **Messages** | sendMsg, saveSignature | ⛳ |
 | **Courses** | addCourse, addCourseStudents, addCourseTeacher, getCourses | ⛳ |
 | **Helpdesk** | addHelpdeskTicket, getHelpdeskMiniDbItems | ⛳ |
@@ -61,7 +61,7 @@ We will work resource-by-resource. Each row should end up in git history as its 
 - [x] Accounts: add `getUserDetails*` trio  
 - [x] Accounts: add `getUserOfficialClass`  
 - [x] Groups: add `getAllGroupsAndClasses`, `getClassList`, `getClassListJson`, `getClassTeachers`  
-- [ ] Absences: implement full set with pagination helpers  
+- [x] Absences: implement full set  
 - [ ] Courses (read): `getCourses`  
 - [x] Parameters: `getReferenceField`  
 - [ ] Parameters: error code lookups  
