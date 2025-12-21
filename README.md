@@ -26,7 +26,7 @@ All functionality is exposed by a single node named **SmartSchool**. It currentl
 
 | Resource | Operations | Description |
 | --- | --- | --- |
-| `Group` | `Get All Accounts`, `Get All Accounts (Extended)` | Fetch the members of a class or subgroup, optionally including descendants. |
+| `Group` | `Get All Accounts`, `Get All Accounts (Extended)`, `Get All Groups and Classes`, `Get Class List (CSV)`, `Get Class List (JSON)`, `Get Class Teachers` | Work with the group/class hierarchy, export class lists (CSV/JSON), and inspect titular assignments. |
 | `Helpdesk` | `List Helpdesk Items`, `Create Helpdesk Ticket` | Retrieve the helpdesk mini database (categories + item IDs) and create new tickets. |
 | `Message` | `Send Message` | Send SmartSchool messages (main account or co-account) with optional attachments and LVS copy. |
 | `Account` | `Get User Details`, `Get User Details by Number`, `Get User Details by Username`, `Get User Details by Scannable Code`, `Get User Official Class` | Inspect any user profile via multiple identifiers and retrieve their official class assignment. |

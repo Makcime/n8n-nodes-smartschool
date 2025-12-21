@@ -13,6 +13,10 @@ type SupportedResource = 'group' | 'helpdesk' | 'message' | 'account' | 'paramet
 type SupportedOperation =
 	| 'getAllAccounts'
 	| 'getAllAccountsExtended'
+	| 'getAllGroupsAndClasses'
+	| 'getClassList'
+	| 'getClassListJson'
+	| 'getClassTeachers'
 	| 'getHelpdeskMiniDbItems'
 	| 'addHelpdeskTicket'
 	| 'sendMsg'
@@ -144,6 +148,30 @@ export class SmartSchool implements INodeType {
 						description: 'List all user accounts from a SmartSchool group with extended metadata',
 						action: 'Get all accounts extended',
 					},
+					{
+						name: 'Get All Groups and Classes',
+						value: 'getAllGroupsAndClasses',
+						description: 'Retrieve the entire group/class hierarchy',
+						action: 'Get all groups and classes',
+					},
+					{
+						name: 'Get Class List (CSV)',
+						value: 'getClassList',
+						description: 'Download the class list in CSV format',
+						action: 'Get class list csv',
+					},
+					{
+						name: 'Get Class List (JSON)',
+						value: 'getClassListJson',
+						description: 'Download the class list in JSON format',
+						action: 'Get class list json',
+					},
+					{
+						name: 'Get Class Teachers',
+						value: 'getClassTeachers',
+						description: 'List titular teachers per class',
+						action: 'Get class teachers',
+					},
 				],
 			},
 			{
@@ -237,6 +265,19 @@ export class SmartSchool implements INodeType {
 					show: {
 						resource: ['group'],
 						operation: ['getAllAccounts', 'getAllAccountsExtended'],
+					},
+				},
+			},
+			{
+				displayName: 'Get All Owners',
+				name: 'getAllOwners',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to retrieve every titular teacher per class instead of only the first',
+				displayOptions: {
+					show: {
+						resource: ['group'],
+						operation: ['getClassTeachers'],
 					},
 				},
 			},
@@ -541,6 +582,39 @@ export class SmartSchool implements INodeType {
 					}
 
 					continue;
+				}
+
+				if (resource === 'group') {
+					if (operation === 'getAllGroupsAndClasses') {
+						const response = await client.getAllGroupsAndClasses();
+						normalizeAndPush(response);
+						continue;
+					}
+
+					if (operation === 'getClassList') {
+						const response = (await client.getClassList()) as string;
+						returnData.push({
+							json: { csv: response },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'getClassListJson') {
+						const response = await client.getClassListJson();
+						normalizeAndPush(response);
+						continue;
+					}
+
+					if (operation === 'getClassTeachers') {
+						const getAllOwners = this.getNodeParameter('getAllOwners', itemIndex, false) as boolean;
+						const response = await client.getClassTeachers({
+							accesscode,
+							getAllOwners,
+						});
+						normalizeAndPush(response);
+						continue;
+					}
 				}
 
 				if (resource === 'account') {
