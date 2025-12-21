@@ -103,6 +103,72 @@ class SmartSchool {
                             description: 'Retrieve the official class for a user',
                             action: 'Get user official class',
                         },
+                        {
+                            name: 'Save User',
+                            value: 'saveUser',
+                            description: 'Create or update a SmartSchool user',
+                            action: 'Save user',
+                        },
+                        {
+                            name: 'Delete User',
+                            value: 'delUser',
+                            description: 'Remove a user from SmartSchool',
+                            action: 'Delete user',
+                        },
+                        {
+                            name: 'Set Account Status',
+                            value: 'setAccountStatus',
+                            description: 'Activate, deactivate, or set account status',
+                            action: 'Set account status',
+                        },
+                        {
+                            name: 'Change Username',
+                            value: 'changeUsername',
+                            description: 'Change a username using the internal number',
+                            action: 'Change username',
+                        },
+                        {
+                            name: 'Change Internal Number',
+                            value: 'changeInternNumber',
+                            description: 'Change the internal number for a user',
+                            action: 'Change internal number',
+                        },
+                        {
+                            name: 'Change Password at Next Login',
+                            value: 'changePasswordAtNextLogin',
+                            description: 'Force a password change on next login',
+                            action: 'Change password at next login',
+                        },
+                        {
+                            name: 'Force Password Reset',
+                            value: 'forcePasswordReset',
+                            description: 'Force a password reset for a user account',
+                            action: 'Force password reset',
+                        },
+                        {
+                            name: 'Replace Internal Number',
+                            value: 'replaceInum',
+                            description: 'Replace a user internal number with a new one',
+                            action: 'Replace internal number',
+                        },
+                        {
+                            name: 'Save User Parameter',
+                            value: 'saveUserParameter',
+                            description: 'Update a SmartSchool user parameter',
+                            action: 'Save user parameter',
+                        },
+                        {
+                            name: 'Remove Co-Account',
+                            value: 'removeCoAccount',
+                            description: 'Remove a co-account from a user',
+                            action: 'Remove co-account',
+                        },
+                        {
+                            name: 'Save Password',
+                            value: 'savePassword',
+                            description: 'Set a new password for a user account',
+                            action: 'Save password',
+                        },
                     ],
                 },
                 {
@@ -451,6 +517,13 @@ class SmartSchool {
                                 'getUserOfficialClass',
                                 'getAbsents',
                                 'getAbsentsWithAlias',
+                                'delUser',
+                                'setAccountStatus',
+                                'changePasswordAtNextLogin',
+                                'forcePasswordReset',
+                                'saveUserParameter',
+                                'removeCoAccount',
+                                'savePassword',
                             ],
                         },
                     },
@@ -465,7 +538,7 @@ class SmartSchool {
                     displayOptions: {
                         show: {
                             resource: ['account'],
-                            operation: ['getUserDetailsByNumber'],
+                            operation: ['getUserDetailsByNumber', 'changeUsername'],
                         },
                     },
                 },
@@ -479,7 +552,7 @@ class SmartSchool {
                     displayOptions: {
                         show: {
                             resource: ['account'],
-                            operation: ['getUserDetailsByUsername'],
+                            operation: ['getUserDetailsByUsername', 'changeInternNumber'],
                         },
                     },
                 },
@@ -509,6 +582,351 @@ class SmartSchool {
                             operation: ['getUserOfficialClass'],
                         },
                     },
+                },
+                {
+                    displayName: 'New Username',
+                    name: 'newUsername',
+                    type: 'string',
+                    default: '',
+                    required: true,
+                    description: 'New username to assign',
+                    displayOptions: {
+                        show: {
+                            resource: ['account'],
+                            operation: ['changeUsername'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'New Internal Number',
+                    name: 'newInternNumber',
+                    type: 'string',
+                    default: '',
+                    required: true,
+                    description: 'New internal number to assign',
+                    displayOptions: {
+                        show: {
+                            resource: ['account'],
+                            operation: ['changeInternNumber'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Account Status',
+                    name: 'accountStatus',
+                    type: 'string',
+                    default: '',
+                    required: true,
+                    description: 'Status label (e.g., "actief", "niet actief", "actief tot en met YYYY/MM/DD")',
+                    displayOptions: {
+                        show: {
+                            resource: ['account'],
+                            operation: ['setAccountStatus'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Account Type',
+                    name: 'accountType',
+                    type: 'number',
+                    typeOptions: {
+                        minValue: 0,
+                    },
+                    default: 0,
+                    description: '0 = main account, 1 = first co-account, etc.',
+                    displayOptions: {
+                        show: {
+                            resource: ['account'],
+                            operation: ['changePasswordAtNextLogin', 'forcePasswordReset', 'removeCoAccount', 'savePassword'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Password',
+                    name: 'password',
+                    type: 'string',
+                    default: '',
+                    required: true,
+                    typeOptions: {
+                        password: true,
+                    },
+                    description: 'New password to set for the user',
+                    displayOptions: {
+                        show: {
+                            resource: ['account'],
+                            operation: ['savePassword'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Change Password at Next Login',
+                    name: 'mustChangePassword',
+                    type: 'boolean',
+                    default: false,
+                    description: 'Force the user to change password at next login',
+                    displayOptions: {
+                        show: {
+                            resource: ['account'],
+                            operation: ['savePassword'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Parameter Name',
+                    name: 'paramName',
+                    type: 'string',
+                    default: '',
+                    required: true,
+                    description: 'User parameter name to update (e.g., email, status_coaccount1)',
+                    displayOptions: {
+                        show: {
+                            resource: ['account'],
+                            operation: ['saveUserParameter'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Parameter Value',
+                    name: 'paramValue',
+                    type: 'string',
+                    default: '',
+                    required: true,
+                    description: 'Value to set for the parameter',
+                    displayOptions: {
+                        show: {
+                            resource: ['account'],
+                            operation: ['saveUserParameter'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Official Date',
+                    name: 'officialDate',
+                    type: 'string',
+                    default: '',
+                    description: 'Date to apply the change (YYYY-MM-DD)',
+                    displayOptions: {
+                        show: {
+                            resource: ['account'],
+                            operation: ['delUser'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Old Internal Number',
+                    name: 'oldInum',
+                    type: 'string',
+                    default: '',
+                    required: true,
+                    description: 'Existing internal number to replace',
+                    displayOptions: {
+                        show: {
+                            resource: ['account'],
+                            operation: ['replaceInum'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'New Internal Number',
+                    name: 'newInum',
+                    type: 'string',
+                    default: '',
+                    required: true,
+                    description: 'Replacement internal number',
+                    displayOptions: {
+                        show: {
+                            resource: ['account'],
+                            operation: ['replaceInum'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'User Profile',
+                    name: 'userProfile',
+                    type: 'fixedCollection',
+                    default: {},
+                    description: 'Core SmartSchool user fields',
+                    displayOptions: {
+                        show: {
+                            resource: ['account'],
+                            operation: ['saveUser'],
+                        },
+                    },
+                    options: [
+                        {
+                            displayName: 'Required',
+                            name: 'required',
+                            values: [
+                                {
+                                    displayName: 'Username',
+                                    name: 'username',
+                                    type: 'string',
+                                    default: '',
+                                    required: true,
+                                },
+                                {
+                                    displayName: 'First Name',
+                                    name: 'name',
+                                    type: 'string',
+                                    default: '',
+                                    required: true,
+                                },
+                                {
+                                    displayName: 'Last Name',
+                                    name: 'surname',
+                                    type: 'string',
+                                    default: '',
+                                    required: true,
+                                },
+                                {
+                                    displayName: 'Base Role',
+                                    name: 'basisrol',
+                                    type: 'options',
+                                    options: [
+                                        { name: 'Student (leerling)', value: 'leerling' },
+                                        { name: 'Teacher (leerkracht)', value: 'leerkracht' },
+                                        { name: 'Management (directie)', value: 'directie' },
+                                        { name: 'Other (andere)', value: 'andere' },
+                                    ],
+                                    default: 'leerling',
+                                    required: true,
+                                },
+                            ],
+                        },
+                        {
+                            displayName: 'Optional',
+                            name: 'optional',
+                            values: [
+                                {
+                                    displayName: 'Primary Password',
+                                    name: 'passwd1',
+                                    type: 'string',
+                                    typeOptions: { password: true },
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Internal Number',
+                                    name: 'internnumber',
+                                    type: 'string',
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Extra Names',
+                                    name: 'extranames',
+                                    type: 'string',
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Initials',
+                                    name: 'initials',
+                                    type: 'string',
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Sex',
+                                    name: 'sex',
+                                    type: 'string',
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Birthdate',
+                                    name: 'birthdate',
+                                    type: 'string',
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Birth City',
+                                    name: 'birthcity',
+                                    type: 'string',
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Birth Country',
+                                    name: 'birthcountry',
+                                    type: 'string',
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Nationality',
+                                    name: 'nationality',
+                                    type: 'string',
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Address',
+                                    name: 'address',
+                                    type: 'string',
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Postal Code',
+                                    name: 'postalcode',
+                                    type: 'string',
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'City',
+                                    name: 'city',
+                                    type: 'string',
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Country',
+                                    name: 'country',
+                                    type: 'string',
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Phone',
+                                    name: 'phone',
+                                    type: 'string',
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Mobile',
+                                    name: 'mobile',
+                                    type: 'string',
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Email',
+                                    name: 'email',
+                                    type: 'string',
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Secondary Password',
+                                    name: 'passwd2',
+                                    type: 'string',
+                                    typeOptions: { password: true },
+                                    default: '',
+                                },
+                                {
+                                    displayName: 'Tertiary Password',
+                                    name: 'passwd3',
+                                    type: 'string',
+                                    typeOptions: { password: true },
+                                    default: '',
+                                },
+                            ],
+                        },
+                        {
+                            displayName: 'Custom Fields',
+                            name: 'custom',
+                            values: [
+                                {
+                                    displayName: 'Custom Fields (JSON)',
+                                    name: 'customFields',
+                                    type: 'string',
+                                    typeOptions: {
+                                        rows: 4,
+                                    },
+                                    default: '',
+                                    description: 'JSON object of additional SmartSchool fields',
+                                },
+                            ],
+                        },
+                    ],
                 },
                 {
                     displayName: 'Sender Identifier',
@@ -596,7 +1014,7 @@ class SmartSchool {
         };
     }
     async execute() {
-        var _a;
+        var _a, _b, _c, _d, _e;
         const items = this.getInputData();
         const returnData = [];
         const client = await GenericFunctions_1.getSmartSchoolClient.call(this);
@@ -728,6 +1146,186 @@ class SmartSchool {
                         normalizeAndPush(response);
                         continue;
                     }
+                    if (operation === 'saveUser') {
+                        const profile = this.getNodeParameter('userProfile', itemIndex, {});
+                        const required = ((_a = profile.required) !== null && _a !== void 0 ? _a : {});
+                        const optional = ((_b = profile.optional) !== null && _b !== void 0 ? _b : {});
+                        const custom = ((_c = profile.custom) !== null && _c !== void 0 ? _c : {});
+                        const customFieldsRaw = ((_d = custom.customFields) !== null && _d !== void 0 ? _d : '');
+                        let customFields = {};
+                        if (customFieldsRaw) {
+                            try {
+                                customFields = JSON.parse(customFieldsRaw);
+                            }
+                            catch (error) {
+                                throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'Custom fields must be valid JSON.', { itemIndex });
+                            }
+                        }
+                        const payload = {
+                            accesscode,
+                            username: required.username,
+                            name: required.name,
+                            surname: required.surname,
+                            basisrol: required.basisrol,
+                            ...optional,
+                            ...customFields,
+                        };
+                        const response = await client.saveUser(payload);
+                        returnData.push({
+                            json: { success: response },
+                            pairedItem: { item: itemIndex },
+                        });
+                        continue;
+                    }
+                    if (operation === 'delUser') {
+                        const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
+                        const officialDate = this.getNodeParameter('officialDate', itemIndex, '');
+                        const payload = {
+                            accesscode,
+                            userIdentifier,
+                        };
+                        if (officialDate) {
+                            payload.officialDate = officialDate;
+                        }
+                        const response = await client.delUser(payload);
+                        returnData.push({
+                            json: { success: response },
+                            pairedItem: { item: itemIndex },
+                        });
+                        continue;
+                    }
+                    if (operation === 'setAccountStatus') {
+                        const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
+                        const accountStatus = this.getNodeParameter('accountStatus', itemIndex);
+                        const response = await client.setAccountStatus({
+                            accesscode,
+                            userIdentifier,
+                            accountStatus,
+                        });
+                        returnData.push({
+                            json: { success: response },
+                            pairedItem: { item: itemIndex },
+                        });
+                        continue;
+                    }
+                    if (operation === 'changeUsername') {
+                        const internNumber = this.getNodeParameter('internalNumber', itemIndex);
+                        const newUsername = this.getNodeParameter('newUsername', itemIndex);
+                        const response = await client.changeUsername({
+                            accesscode,
+                            internNumber,
+                            newUsername,
+                        });
+                        returnData.push({
+                            json: { success: response },
+                            pairedItem: { item: itemIndex },
+                        });
+                        continue;
+                    }
+                    if (operation === 'changeInternNumber') {
+                        const username = this.getNodeParameter('accountUsername', itemIndex);
+                        const newInternNumber = this.getNodeParameter('newInternNumber', itemIndex);
+                        const response = await client.changeInternNumber({
+                            accesscode,
+                            username,
+                            newInternNumber,
+                        });
+                        returnData.push({
+                            json: { success: response },
+                            pairedItem: { item: itemIndex },
+                        });
+                        continue;
+                    }
+                    if (operation === 'changePasswordAtNextLogin') {
+                        const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
+                        const accountType = this.getNodeParameter('accountType', itemIndex);
+                        const response = await client.changePasswordAtNextLogin({
+                            accesscode,
+                            userIdentifier,
+                            accountType,
+                        });
+                        returnData.push({
+                            json: { success: response },
+                            pairedItem: { item: itemIndex },
+                        });
+                        continue;
+                    }
+                    if (operation === 'forcePasswordReset') {
+                        const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
+                        const accountType = this.getNodeParameter('accountType', itemIndex);
+                        const response = await client.forcePasswordReset({
+                            accesscode,
+                            userIdentifier,
+                            accountType,
+                        });
+                        returnData.push({
+                            json: { success: response },
+                            pairedItem: { item: itemIndex },
+                        });
+                        continue;
+                    }
+                    if (operation === 'replaceInum') {
+                        const oldInum = this.getNodeParameter('oldInum', itemIndex);
+                        const newInum = this.getNodeParameter('newInum', itemIndex);
+                        const response = await client.replaceInum({
+                            accesscode,
+                            oldInum,
+                            newInum,
+                        });
+                        returnData.push({
+                            json: { success: response },
+                            pairedItem: { item: itemIndex },
+                        });
+                        continue;
+                    }
+                    if (operation === 'saveUserParameter') {
+                        const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
+                        const paramName = this.getNodeParameter('paramName', itemIndex);
+                        const paramValue = this.getNodeParameter('paramValue', itemIndex);
+                        const response = await client.saveUserParameter({
+                            accesscode,
+                            userIdentifier,
+                            paramName: paramName,
+                            paramValue,
+                        });
+                        returnData.push({
+                            json: { success: response },
+                            pairedItem: { item: itemIndex },
+                        });
+                        continue;
+                    }
+                    if (operation === 'removeCoAccount') {
+                        const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
+                        const accountType = this.getNodeParameter('accountType', itemIndex);
+                        const response = await client.removeCoAccount({
+                            accesscode,
+                            userIdentifier,
+                            accountType,
+                        });
+                        returnData.push({
+                            json: { success: response },
+                            pairedItem: { item: itemIndex },
+                        });
+                        continue;
+                    }
+                    if (operation === 'savePassword') {
+                        const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
+                        const accountType = this.getNodeParameter('accountType', itemIndex);
+                        const password = this.getNodeParameter('password', itemIndex);
+                        const mustChangePassword = this.getNodeParameter('mustChangePassword', itemIndex);
+                        const response = await client.savePassword({
+                            accesscode,
+                            userIdentifier,
+                            accountType,
+                            password,
+                            changePasswordAtNextLogin: mustChangePassword ? 1 : 0,
+                        });
+                        returnData.push({
+                            json: { success: response },
+                            pairedItem: { item: itemIndex },
+                        });
+                        continue;
+                    }
                 }
                 if (resource === 'absence') {
                     if (operation === 'getAbsents' || operation === 'getAbsentsWithAlias') {
@@ -831,7 +1429,7 @@ class SmartSchool {
                         coaccount,
                         copyToLVS,
                     };
-                    const attachmentValues = ((_a = attachmentCollection.attachment) !== null && _a !== void 0 ? _a : []);
+                    const attachmentValues = ((_e = attachmentCollection.attachment) !== null && _e !== void 0 ? _e : []);
                     const cleanedAttachments = attachmentValues.filter((entry) => (entry === null || entry === void 0 ? void 0 : entry.filename) && (entry === null || entry === void 0 ? void 0 : entry.filedata));
                     if (cleanedAttachments.length) {
                         payload.attachments = cleanedAttachments;

@@ -32,7 +32,7 @@ Below is the proposed mapping (✅ = implemented, ⏳ = in progress, ⛳ = plann
 
 | Bucket | Operations | Status |
 | --- | --- | --- |
-| **Accounts & Users** | getAllAccounts ✅, getAllAccountsExtended ✅, getUserDetails ✅, getUserDetailsByNumber ✅, getUserDetailsByUsername ✅, getUserDetailsByScannableCode ✅, getUserOfficialClass ✅, saveUser, delUser, setAccountStatus, changeUsername, changeInternNumber, changePasswordAtNextLogin, forcePasswordReset, replaceInum, saveUserParameter, removeCoAccount, savePassword | ⛳ |
+| **Accounts & Users** | getAllAccounts ✅, getAllAccountsExtended ✅, getUserDetails ✅, getUserDetailsByNumber ✅, getUserDetailsByUsername ✅, getUserDetailsByScannableCode ✅, getUserOfficialClass ✅, saveUser ✅, delUser ✅, setAccountStatus ✅, changeUsername ✅, changeInternNumber ✅, changePasswordAtNextLogin ✅, forcePasswordReset ✅, replaceInum ✅, saveUserParameter ✅, removeCoAccount ✅, savePassword ✅ | ⛳ |
 | **Groups & Classes** | getAllGroupsAndClasses ✅, getClassList ✅, getClassListJson ✅, getClassTeachers ✅, saveGroup, saveClass, saveUserToGroup, removeUserFromGroup, delClass, saveClassList, saveClassListJson, getSchoolyearDataOfClass, saveSchoolyearDataOfClass, getSkoreClassTeacherCourseRelation, clearGroup, unregisterStudent | ⛳ |
 | **Absences** | getAbsents ✅, getAbsentsWithAlias ✅, getAbsentsByDate ✅, getAbsentsWithAliasByDate ✅, getAbsentsWithInternalNumberByDate ✅, getAbsentsWithUsernameByDate ✅, getAbsentsByDateAndGroup ✅ | ⛳ |
 | **Messages** | sendMsg, saveSignature | ⛳ |
@@ -68,7 +68,7 @@ We will work resource-by-resource. Each row should end up in git history as its 
 
 #### Milestone 3 – Mutation Suite
 
-- [ ] Users: `saveUser`, `delUser`, status/password helpers  
+- [x] Users: `saveUser`, `delUser`, status/password helpers  
 - [ ] Groups/Classes: create/update/delete + membership adjustments  
 - [ ] Courses: `addCourse`, `addCourseStudents`, `addCourseTeacher`  
 - [ ] Helpdesk: ticket creation  
@@ -114,7 +114,7 @@ Use this table to keep status visible. Update `Status` column as work proceeds.
 | --- | --- | --- |
 | Icons renamed & cache-busting | ⏳ | Waiting for confirmation after next n8n restart |
 | Shared parameter descriptions | ⛳ | Not started |
-| Accounts detail operations | ⛳ | Not started |
+| Accounts detail operations | ✅ | Read + mutation operations available |
 | Helpdesk endpoints (list/create) | ✅ | `getHelpdeskMiniDbItems` + `addHelpdeskTicket` in SmartSchool node |
 | Messaging (sendMsg) | ✅ | Send SmartSchool messages incl. optional attachments |
 | Absence endpoints | ⛳ | Not started |

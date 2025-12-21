@@ -32,7 +32,18 @@ type SupportedOperation =
 	| 'getAbsentsWithAliasByDate'
 	| 'getAbsentsWithInternalNumberByDate'
 	| 'getAbsentsWithUsernameByDate'
-	| 'getAbsentsByDateAndGroup';
+	| 'getAbsentsByDateAndGroup'
+	| 'saveUser'
+	| 'delUser'
+	| 'setAccountStatus'
+	| 'changeUsername'
+	| 'changeInternNumber'
+	| 'changePasswordAtNextLogin'
+	| 'forcePasswordReset'
+	| 'replaceInum'
+	| 'saveUserParameter'
+	| 'removeCoAccount'
+	| 'savePassword';
 
 export class SmartSchool implements INodeType {
 	description: INodeTypeDescription = {
@@ -132,6 +143,72 @@ export class SmartSchool implements INodeType {
 						value: 'getUserOfficialClass',
 						description: 'Retrieve the official class for a user',
 						action: 'Get user official class',
+					},
+					{
+						name: 'Save User',
+						value: 'saveUser',
+						description: 'Create or update a SmartSchool user',
+						action: 'Save user',
+					},
+					{
+						name: 'Delete User',
+						value: 'delUser',
+						description: 'Remove a user from SmartSchool',
+						action: 'Delete user',
+					},
+					{
+						name: 'Set Account Status',
+						value: 'setAccountStatus',
+						description: 'Activate, deactivate, or set account status',
+						action: 'Set account status',
+					},
+					{
+						name: 'Change Username',
+						value: 'changeUsername',
+						description: 'Change a username using the internal number',
+						action: 'Change username',
+					},
+					{
+						name: 'Change Internal Number',
+						value: 'changeInternNumber',
+						description: 'Change the internal number for a user',
+						action: 'Change internal number',
+					},
+					{
+						name: 'Change Password at Next Login',
+						value: 'changePasswordAtNextLogin',
+						description: 'Force a password change on next login',
+						action: 'Change password at next login',
+					},
+					{
+						name: 'Force Password Reset',
+						value: 'forcePasswordReset',
+						description: 'Force a password reset for a user account',
+						action: 'Force password reset',
+					},
+					{
+						name: 'Replace Internal Number',
+						value: 'replaceInum',
+						description: 'Replace a user internal number with a new one',
+						action: 'Replace internal number',
+					},
+					{
+						name: 'Save User Parameter',
+						value: 'saveUserParameter',
+						description: 'Update a SmartSchool user parameter',
+						action: 'Save user parameter',
+					},
+					{
+						name: 'Remove Co-Account',
+						value: 'removeCoAccount',
+						description: 'Remove a co-account from a user',
+						action: 'Remove co-account',
+					},
+					{
+						name: 'Save Password',
+						value: 'savePassword',
+						description: 'Set a new password for a user account',
+						action: 'Save password',
 					},
 				],
 			},
@@ -483,6 +560,13 @@ export class SmartSchool implements INodeType {
 							'getUserOfficialClass',
 							'getAbsents',
 							'getAbsentsWithAlias',
+							'delUser',
+							'setAccountStatus',
+							'changePasswordAtNextLogin',
+							'forcePasswordReset',
+							'saveUserParameter',
+							'removeCoAccount',
+							'savePassword',
 						],
 					},
 				},
@@ -497,7 +581,7 @@ export class SmartSchool implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['account'],
-						operation: ['getUserDetailsByNumber'],
+						operation: ['getUserDetailsByNumber', 'changeUsername'],
 					},
 				},
 			},
@@ -511,7 +595,7 @@ export class SmartSchool implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['account'],
-						operation: ['getUserDetailsByUsername'],
+						operation: ['getUserDetailsByUsername', 'changeInternNumber'],
 					},
 				},
 			},
@@ -541,6 +625,351 @@ export class SmartSchool implements INodeType {
 						operation: ['getUserOfficialClass'],
 					},
 				},
+			},
+			{
+				displayName: 'New Username',
+				name: 'newUsername',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'New username to assign',
+				displayOptions: {
+					show: {
+						resource: ['account'],
+						operation: ['changeUsername'],
+					},
+				},
+			},
+			{
+				displayName: 'New Internal Number',
+				name: 'newInternNumber',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'New internal number to assign',
+				displayOptions: {
+					show: {
+						resource: ['account'],
+						operation: ['changeInternNumber'],
+					},
+				},
+			},
+			{
+				displayName: 'Account Status',
+				name: 'accountStatus',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Status label (e.g., "actief", "niet actief", "actief tot en met YYYY/MM/DD")',
+				displayOptions: {
+					show: {
+						resource: ['account'],
+						operation: ['setAccountStatus'],
+					},
+				},
+			},
+			{
+				displayName: 'Account Type',
+				name: 'accountType',
+				type: 'number',
+				typeOptions: {
+					minValue: 0,
+				},
+				default: 0,
+				description: '0 = main account, 1 = first co-account, etc.',
+				displayOptions: {
+					show: {
+						resource: ['account'],
+						operation: ['changePasswordAtNextLogin', 'forcePasswordReset', 'removeCoAccount', 'savePassword'],
+					},
+				},
+			},
+			{
+				displayName: 'Password',
+				name: 'password',
+				type: 'string',
+				default: '',
+				required: true,
+				typeOptions: {
+					password: true,
+				},
+				description: 'New password to set for the user',
+				displayOptions: {
+					show: {
+						resource: ['account'],
+						operation: ['savePassword'],
+					},
+				},
+			},
+			{
+				displayName: 'Change Password at Next Login',
+				name: 'mustChangePassword',
+				type: 'boolean',
+				default: false,
+				description: 'Force the user to change password at next login',
+				displayOptions: {
+					show: {
+						resource: ['account'],
+						operation: ['savePassword'],
+					},
+				},
+			},
+			{
+				displayName: 'Parameter Name',
+				name: 'paramName',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'User parameter name to update (e.g., email, status_coaccount1)',
+				displayOptions: {
+					show: {
+						resource: ['account'],
+						operation: ['saveUserParameter'],
+					},
+				},
+			},
+			{
+				displayName: 'Parameter Value',
+				name: 'paramValue',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Value to set for the parameter',
+				displayOptions: {
+					show: {
+						resource: ['account'],
+						operation: ['saveUserParameter'],
+					},
+				},
+			},
+			{
+				displayName: 'Official Date',
+				name: 'officialDate',
+				type: 'string',
+				default: '',
+				description: 'Date to apply the change (YYYY-MM-DD)',
+				displayOptions: {
+					show: {
+						resource: ['account'],
+						operation: ['delUser'],
+					},
+				},
+			},
+			{
+				displayName: 'Old Internal Number',
+				name: 'oldInum',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Existing internal number to replace',
+				displayOptions: {
+					show: {
+						resource: ['account'],
+						operation: ['replaceInum'],
+					},
+				},
+			},
+			{
+				displayName: 'New Internal Number',
+				name: 'newInum',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Replacement internal number',
+				displayOptions: {
+					show: {
+						resource: ['account'],
+						operation: ['replaceInum'],
+					},
+				},
+			},
+			{
+				displayName: 'User Profile',
+				name: 'userProfile',
+				type: 'fixedCollection',
+				default: {},
+				description: 'Core SmartSchool user fields',
+				displayOptions: {
+					show: {
+						resource: ['account'],
+						operation: ['saveUser'],
+					},
+				},
+				options: [
+					{
+						displayName: 'Required',
+						name: 'required',
+						values: [
+							{
+								displayName: 'Username',
+								name: 'username',
+								type: 'string',
+								default: '',
+								required: true,
+							},
+							{
+								displayName: 'First Name',
+								name: 'name',
+								type: 'string',
+								default: '',
+								required: true,
+							},
+							{
+								displayName: 'Last Name',
+								name: 'surname',
+								type: 'string',
+								default: '',
+								required: true,
+							},
+							{
+								displayName: 'Base Role',
+								name: 'basisrol',
+								type: 'options',
+								options: [
+									{ name: 'Student (leerling)', value: 'leerling' },
+									{ name: 'Teacher (leerkracht)', value: 'leerkracht' },
+									{ name: 'Management (directie)', value: 'directie' },
+									{ name: 'Other (andere)', value: 'andere' },
+								],
+								default: 'leerling',
+								required: true,
+							},
+						],
+					},
+					{
+						displayName: 'Optional',
+						name: 'optional',
+						values: [
+							{
+								displayName: 'Primary Password',
+								name: 'passwd1',
+								type: 'string',
+								typeOptions: { password: true },
+								default: '',
+							},
+							{
+								displayName: 'Internal Number',
+								name: 'internnumber',
+								type: 'string',
+								default: '',
+							},
+							{
+								displayName: 'Extra Names',
+								name: 'extranames',
+								type: 'string',
+								default: '',
+							},
+							{
+								displayName: 'Initials',
+								name: 'initials',
+								type: 'string',
+								default: '',
+							},
+							{
+								displayName: 'Sex',
+								name: 'sex',
+								type: 'string',
+								default: '',
+							},
+							{
+								displayName: 'Birthdate',
+								name: 'birthdate',
+								type: 'string',
+								default: '',
+							},
+							{
+								displayName: 'Birth City',
+								name: 'birthcity',
+								type: 'string',
+								default: '',
+							},
+							{
+								displayName: 'Birth Country',
+								name: 'birthcountry',
+								type: 'string',
+								default: '',
+							},
+							{
+								displayName: 'Nationality',
+								name: 'nationality',
+								type: 'string',
+								default: '',
+							},
+							{
+								displayName: 'Address',
+								name: 'address',
+								type: 'string',
+								default: '',
+							},
+							{
+								displayName: 'Postal Code',
+								name: 'postalcode',
+								type: 'string',
+								default: '',
+							},
+							{
+								displayName: 'City',
+								name: 'city',
+								type: 'string',
+								default: '',
+							},
+							{
+								displayName: 'Country',
+								name: 'country',
+								type: 'string',
+								default: '',
+							},
+							{
+								displayName: 'Phone',
+								name: 'phone',
+								type: 'string',
+								default: '',
+							},
+							{
+								displayName: 'Mobile',
+								name: 'mobile',
+								type: 'string',
+								default: '',
+							},
+							{
+								displayName: 'Email',
+								name: 'email',
+								type: 'string',
+								default: '',
+							},
+							{
+								displayName: 'Secondary Password',
+								name: 'passwd2',
+								type: 'string',
+								typeOptions: { password: true },
+								default: '',
+							},
+							{
+								displayName: 'Tertiary Password',
+								name: 'passwd3',
+								type: 'string',
+								typeOptions: { password: true },
+								default: '',
+							},
+						],
+					},
+					{
+						displayName: 'Custom Fields',
+						name: 'custom',
+						values: [
+							{
+								displayName: 'Custom Fields (JSON)',
+								name: 'customFields',
+								type: 'string',
+								typeOptions: {
+									rows: 4,
+								},
+								default: '',
+								description: 'JSON object of additional SmartSchool fields',
+							},
+						],
+					},
+				],
 			},
 				{
 					displayName: 'Sender Identifier',
@@ -777,6 +1206,203 @@ export class SmartSchool implements INodeType {
 							date,
 						});
 						normalizeAndPush(response);
+						continue;
+					}
+
+					if (operation === 'saveUser') {
+						const profile = this.getNodeParameter('userProfile', itemIndex, {}) as IDataObject;
+						const required = (profile.required ?? {}) as IDataObject;
+						const optional = (profile.optional ?? {}) as IDataObject;
+						const custom = (profile.custom ?? {}) as IDataObject;
+						const customFieldsRaw = (custom.customFields ?? '') as string;
+
+						let customFields: IDataObject = {};
+						if (customFieldsRaw) {
+							try {
+								customFields = JSON.parse(customFieldsRaw) as IDataObject;
+							} catch (error) {
+								throw new NodeOperationError(
+									this.getNode(),
+									'Custom fields must be valid JSON.',
+									{ itemIndex },
+								);
+							}
+						}
+
+						const payload: IDataObject = {
+							accesscode,
+							username: required.username as string,
+							name: required.name as string,
+							surname: required.surname as string,
+							basisrol: required.basisrol as string,
+							...optional,
+							...customFields,
+						};
+
+						const response = await client.saveUser(payload as never);
+						returnData.push({
+							json: { success: response },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'delUser') {
+						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
+						const officialDate = this.getNodeParameter('officialDate', itemIndex, '') as string;
+						const payload: IDataObject = {
+							accesscode,
+							userIdentifier,
+						};
+						if (officialDate) {
+							payload.officialDate = officialDate;
+						}
+						const response = await client.delUser(payload as never);
+						returnData.push({
+							json: { success: response },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'setAccountStatus') {
+						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
+						const accountStatus = this.getNodeParameter('accountStatus', itemIndex) as string;
+						const response = await client.setAccountStatus({
+							accesscode,
+							userIdentifier,
+							accountStatus,
+						});
+						returnData.push({
+							json: { success: response },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'changeUsername') {
+						const internNumber = this.getNodeParameter('internalNumber', itemIndex) as string;
+						const newUsername = this.getNodeParameter('newUsername', itemIndex) as string;
+						const response = await client.changeUsername({
+							accesscode,
+							internNumber,
+							newUsername,
+						});
+						returnData.push({
+							json: { success: response },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'changeInternNumber') {
+						const username = this.getNodeParameter('accountUsername', itemIndex) as string;
+						const newInternNumber = this.getNodeParameter('newInternNumber', itemIndex) as string;
+						const response = await client.changeInternNumber({
+							accesscode,
+							username,
+							newInternNumber,
+						});
+						returnData.push({
+							json: { success: response },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'changePasswordAtNextLogin') {
+						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
+						const accountType = this.getNodeParameter('accountType', itemIndex) as number;
+						const response = await client.changePasswordAtNextLogin({
+							accesscode,
+							userIdentifier,
+							accountType,
+						});
+						returnData.push({
+							json: { success: response },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'forcePasswordReset') {
+						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
+						const accountType = this.getNodeParameter('accountType', itemIndex) as number;
+						const response = await client.forcePasswordReset({
+							accesscode,
+							userIdentifier,
+							accountType,
+						});
+						returnData.push({
+							json: { success: response },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'replaceInum') {
+						const oldInum = this.getNodeParameter('oldInum', itemIndex) as string;
+						const newInum = this.getNodeParameter('newInum', itemIndex) as string;
+						const response = await client.replaceInum({
+							accesscode,
+							oldInum,
+							newInum,
+						});
+						returnData.push({
+							json: { success: response },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'saveUserParameter') {
+						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
+						const paramName = this.getNodeParameter('paramName', itemIndex) as string;
+						const paramValue = this.getNodeParameter('paramValue', itemIndex) as string;
+						const response = await client.saveUserParameter({
+							accesscode,
+							userIdentifier,
+							paramName: paramName as never,
+							paramValue,
+						});
+						returnData.push({
+							json: { success: response },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'removeCoAccount') {
+						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
+						const accountType = this.getNodeParameter('accountType', itemIndex) as number;
+						const response = await client.removeCoAccount({
+							accesscode,
+							userIdentifier,
+							accountType,
+						});
+						returnData.push({
+							json: { success: response },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'savePassword') {
+						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
+						const accountType = this.getNodeParameter('accountType', itemIndex) as number;
+						const password = this.getNodeParameter('password', itemIndex) as string;
+						const mustChangePassword = this.getNodeParameter('mustChangePassword', itemIndex) as boolean;
+						const response = await client.savePassword({
+							accesscode,
+							userIdentifier,
+							accountType,
+							password,
+							changePasswordAtNextLogin: mustChangePassword ? 1 : 0,
+						});
+						returnData.push({
+							json: { success: response },
+							pairedItem: { item: itemIndex },
+						});
 						continue;
 					}
 				}
