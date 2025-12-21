@@ -59,6 +59,10 @@ class SmartSchool {
                             name: 'Absence',
                             value: 'absence',
                         },
+                        {
+                            name: 'Course',
+                            value: 'course',
+                        },
                     ],
                 },
                 {
@@ -224,6 +228,44 @@ class SmartSchool {
                             value: 'getAbsentsByDateAndGroup',
                             description: 'Get absences for a date filtered by group',
                             action: 'Get absents by date and group',
+                        },
+                    ],
+                },
+                {
+                    displayName: 'Operation',
+                    name: 'operation',
+                    type: 'options',
+                    noDataExpression: true,
+                    default: 'getCourses',
+                    displayOptions: {
+                        show: {
+                            resource: ['course'],
+                        },
+                    },
+                    options: [
+                        {
+                            name: 'Get Courses',
+                            value: 'getCourses',
+                            description: 'List available courses (CSV response)',
+                            action: 'Get courses',
+                        },
+                        {
+                            name: 'Add Course',
+                            value: 'addCourse',
+                            description: 'Create a new course',
+                            action: 'Add course',
+                        },
+                        {
+                            name: 'Add Course Students',
+                            value: 'addCourseStudents',
+                            description: 'Assign groups/classes to a course',
+                            action: 'Add course students',
+                        },
+                        {
+                            name: 'Add Course Teacher',
+                            value: 'addCourseTeacher',
+                            description: 'Assign a teacher to a course',
+                            action: 'Add course teacher',
                         },
                     ],
                 },
@@ -693,6 +735,79 @@ class SmartSchool {
                     },
                 },
                 {
+                    displayName: 'Course Name',
+                    name: 'courseName',
+                    type: 'string',
+                    default: '',
+                    required: true,
+                    description: 'Full course name',
+                    displayOptions: {
+                        show: {
+                            resource: ['course'],
+                            operation: ['addCourse', 'addCourseStudents', 'addCourseTeacher'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Course Code',
+                    name: 'courseCode',
+                    type: 'string',
+                    default: '',
+                    required: true,
+                    description: 'Unique course code/description',
+                    displayOptions: {
+                        show: {
+                            resource: ['course'],
+                            operation: ['addCourse', 'addCourseStudents', 'addCourseTeacher'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Visibility',
+                    name: 'courseVisibility',
+                    type: 'options',
+                    options: [
+                        { name: 'Visible', value: 1 },
+                        { name: 'Hidden', value: 0 },
+                    ],
+                    default: 1,
+                    description: 'Course visibility status',
+                    displayOptions: {
+                        show: {
+                            resource: ['course'],
+                            operation: ['addCourse'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Group Codes',
+                    name: 'courseGroupIds',
+                    type: 'string',
+                    default: '',
+                    required: true,
+                    description: 'Comma-separated class/group codes to assign',
+                    displayOptions: {
+                        show: {
+                            resource: ['course'],
+                            operation: ['addCourseStudents'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Teacher Internal Number',
+                    name: 'courseTeacherInternNumber',
+                    type: 'string',
+                    default: '',
+                    required: true,
+                    description: 'Teacher internal number identifier',
+                    displayOptions: {
+                        show: {
+                            resource: ['course'],
+                            operation: ['addCourseTeacher'],
+                        },
+                    },
+                },
+                {
                     displayName: 'Absence Date',
                     name: 'absenceDate',
                     type: 'string',
@@ -800,7 +915,7 @@ class SmartSchool {
                     description: 'Username or identifier of the ticket creator, recipient, or lookup target',
                     displayOptions: {
                         show: {
-                            resource: ['helpdesk', 'message', 'account', 'absence'],
+                            resource: ['helpdesk', 'message', 'account', 'absence', 'course'],
                             operation: [
                                 'addHelpdeskTicket',
                                 'sendMsg',
@@ -818,6 +933,7 @@ class SmartSchool {
                                 'saveUserToGroup',
                                 'removeUserFromGroup',
                                 'unregisterStudent',
+                                'addCourseTeacher',
                             ],
                         },
                     },
@@ -1848,6 +1964,66 @@ class SmartSchool {
                         const code = this.getNodeParameter('code', itemIndex);
                         const response = await client.getAbsentsByDateAndGroup({ accesscode, date, code });
                         normalizeAndPush(response);
+                        continue;
+                    }
+                }
+                if (resource === 'course') {
+                    if (operation === 'getCourses') {
+                        const response = await client.getCourses();
+                        returnData.push({
+                            json: { csv: response },
+                            pairedItem: { item: itemIndex },
+                        });
+                        continue;
+                    }
+                    if (operation === 'addCourse') {
+                        const coursename = this.getNodeParameter('courseName', itemIndex);
+                        const coursedesc = this.getNodeParameter('courseCode', itemIndex);
+                        const visibility = this.getNodeParameter('courseVisibility', itemIndex);
+                        const response = await client.addCourse({
+                            accesscode,
+                            coursename,
+                            coursedesc,
+                            visibility,
+                        });
+                        returnData.push({
+                            json: { success: response },
+                            pairedItem: { item: itemIndex },
+                        });
+                        continue;
+                    }
+                    if (operation === 'addCourseStudents') {
+                        const coursename = this.getNodeParameter('courseName', itemIndex);
+                        const coursedesc = this.getNodeParameter('courseCode', itemIndex);
+                        const groupIds = this.getNodeParameter('courseGroupIds', itemIndex);
+                        const response = await client.addCourseStudents({
+                            accesscode,
+                            coursename,
+                            coursedesc,
+                            groupIds,
+                        });
+                        returnData.push({
+                            json: { success: response },
+                            pairedItem: { item: itemIndex },
+                        });
+                        continue;
+                    }
+                    if (operation === 'addCourseTeacher') {
+                        const coursename = this.getNodeParameter('courseName', itemIndex);
+                        const coursedesc = this.getNodeParameter('courseCode', itemIndex);
+                        const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
+                        const internnummer = this.getNodeParameter('courseTeacherInternNumber', itemIndex);
+                        const response = await client.addCourseTeacher({
+                            accesscode,
+                            coursename,
+                            coursedesc,
+                            userIdentifier,
+                            internnummer,
+                        });
+                        returnData.push({
+                            json: { success: response },
+                            pairedItem: { item: itemIndex },
+                        });
                         continue;
                     }
                 }

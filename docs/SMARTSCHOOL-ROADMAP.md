@@ -36,7 +36,7 @@ Below is the proposed mapping (✅ = implemented, ⏳ = in progress, ⛳ = plann
 | **Groups & Classes** | getAllGroupsAndClasses ✅, getClassList ✅, getClassListJson ✅, getClassTeachers ✅, saveGroup ✅, saveClass ✅, saveUserToGroup ✅, removeUserFromGroup ✅, delClass ✅, saveClassList ✅, saveClassListJson ✅, getSchoolyearDataOfClass ✅, saveSchoolyearDataOfClass ✅, getSkoreClassTeacherCourseRelation ✅, clearGroup ✅, unregisterStudent ✅ | ⛳ |
 | **Absences** | getAbsents ✅, getAbsentsWithAlias ✅, getAbsentsByDate ✅, getAbsentsWithAliasByDate ✅, getAbsentsWithInternalNumberByDate ✅, getAbsentsWithUsernameByDate ✅, getAbsentsByDateAndGroup ✅ | ⛳ |
 | **Messages** | sendMsg, saveSignature | ⛳ |
-| **Courses** | addCourse, addCourseStudents, addCourseTeacher, getCourses | ⛳ |
+| **Courses** | addCourse ✅, addCourseStudents ✅, addCourseTeacher ✅, getCourses ✅ | ⛳ |
 | **Helpdesk** | addHelpdeskTicket, getHelpdeskMiniDbItems | ⛳ |
 | **Parameters** | getReferenceField ✅, returnCsvErrorCodes, returnJsonErrorCodes | ⛳ |
 | **System** | startSkoreSync, checkStatus | ⛳ |
@@ -70,7 +70,7 @@ We will work resource-by-resource. Each row should end up in git history as its 
 
 - [x] Users: `saveUser`, `delUser`, status/password helpers  
 - [x] Groups/Classes: create/update/delete + membership adjustments  
-- [ ] Courses: `addCourse`, `addCourseStudents`, `addCourseTeacher`  
+- [x] Courses: `addCourse`, `addCourseStudents`, `addCourseTeacher`, `getCourses`  
 - [ ] Helpdesk: ticket creation  
 - [ ] Messaging: `sendMsg`, `saveSignature` (may go into dedicated node)  
 

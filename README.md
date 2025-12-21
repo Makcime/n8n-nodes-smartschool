@@ -32,6 +32,7 @@ All functionality is exposed by a single node named **SmartSchool**. It currentl
 | `Account` | `Get User Details`, `Get User Details by Number`, `Get User Details by Username`, `Get User Details by Scannable Code`, `Get User Official Class`, `Save User`, `Delete User`, `Set Account Status`, `Change Username`, `Change Internal Number`, `Change Password at Next Login`, `Force Password Reset`, `Replace Internal Number`, `Save User Parameter`, `Remove Co-Account`, `Save Password` | Read and mutate account data, credentials, status, and user parameters. |
 | `Parameter` | `Get Reference Field` | Fetch the platform reference field configuration and documentation. |
 | `Absence` | `Get Absents`, `Get Absents with Alias`, `Get Absents by Date`, `Get Absents with Alias by Date`, `Get Absents with Internal Number by Date`, `Get Absents with Username by Date`, `Get Absents by Date and Group` | Pull absence data by student, date, or class/group with optional alias labels. |
+| `Course` | `Get Courses`, `Add Course`, `Add Course Students`, `Add Course Teacher` | List courses or manage course assignments for classes and teachers. |
 
 Roadmap work (additional API coverage) is tracked in `docs/SMARTSCHOOL-ROADMAP.md`.
 
