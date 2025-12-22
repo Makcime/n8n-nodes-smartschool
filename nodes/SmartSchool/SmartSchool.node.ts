@@ -7,7 +7,7 @@ import type {
 } from 'n8n-workflow';
 import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
-import { callSmartschoolSoap, getSmartSchoolCredentials } from './GenericFunctions';
+import { callSmartschoolSoap, getSmartSchoolCredentials, plaintextToHtml } from './GenericFunctions';
 import { ACCOUNT_STATUS_OPTIONS, VISIBILITY_OPTIONS } from './shared/fields';
 import { SMARTSCHOOL_ERROR_CODES } from './shared/errorCodes';
 
@@ -1044,6 +1044,20 @@ export class SmartSchool implements INodeType {
 					show: {
 						resource: ['message'],
 						operation: ['sendMsg'],
+					},
+				},
+			},
+			{
+				displayName: 'Wrap HTML',
+				name: 'wrapHtml',
+				type: 'boolean',
+				default: false,
+				description:
+					'Convert plain text into a minimal HTML document with paragraphs and line breaks',
+				displayOptions: {
+					show: {
+						resource: ['helpdesk', 'message'],
+						operation: ['addHelpdeskTicket', 'sendMsg'],
 					},
 				},
 			},
@@ -2360,13 +2374,14 @@ export class SmartSchool implements INodeType {
 					if (operation === 'addHelpdeskTicket') {
 						const title = this.getNodeParameter('title', itemIndex) as string;
 						const description = this.getNodeParameter('ticketDescription', itemIndex) as string;
+						const wrapHtml = this.getNodeParameter('wrapHtml', itemIndex, false) as boolean;
 						const priority = this.getNodeParameter('priority', itemIndex) as number;
 						const miniDbItem = this.getNodeParameter('miniDbItem', itemIndex) as string;
 						const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
 
 						const response = await callMethod('addHelpdeskTicket', {
 							title,
-							description,
+							description: wrapHtml ? plaintextToHtml(description) : description,
 							priority,
 							miniDbItem,
 							userIdentifier,
@@ -2387,6 +2402,7 @@ export class SmartSchool implements INodeType {
 					const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex) as string;
 					const title = this.getNodeParameter('title', itemIndex) as string;
 					const body = this.getNodeParameter('messageBody', itemIndex) as string;
+					const wrapHtml = this.getNodeParameter('wrapHtml', itemIndex, false) as boolean;
 					const senderIdentifier = this.getNodeParameter('senderIdentifier', itemIndex) as string;
 					const coaccount = this.getNodeParameter('coaccount', itemIndex, 0) as number;
 					const copyToLVS = this.getNodeParameter('copyToLVS', itemIndex, false) as boolean;
@@ -2395,7 +2411,7 @@ export class SmartSchool implements INodeType {
 					const payload: Record<string, string | number | boolean> = {
 						userIdentifier,
 						title,
-						body,
+						body: wrapHtml ? plaintextToHtml(body) : body,
 						senderIdentifier,
 						coaccount,
 						copyToLVS,

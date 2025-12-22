@@ -12,6 +12,8 @@ const xmlEscape = (value: string) =>
 		.replace(/"/g, '&quot;')
 		.replace(/'/g, '&apos;');
 
+const htmlEscape = (value: string) => xmlEscape(value);
+
 const decodeXmlEntities = (value: string) =>
 	value
 		.replace(/&lt;/g, '<')
@@ -168,6 +170,19 @@ const parseSoapResponse = async (xml: string) => {
 	}
 
 	return normalizedValue;
+};
+
+export const plaintextToHtml = (value: string) => {
+	const trimmed = value.trim();
+	const escaped = htmlEscape(trimmed);
+	if (!escaped) {
+		return '<html><body></body></html>';
+	}
+	const paragraphs = escaped
+		.split(/\n{2,}/)
+		.map((paragraph) => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`)
+		.join('');
+	return `<html><body>${paragraphs}</body></html>`;
 };
 
 export async function getSmartSchoolCredentials(this: IExecuteFunctions) {
