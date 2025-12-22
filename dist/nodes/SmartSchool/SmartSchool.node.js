@@ -979,7 +979,7 @@ class SmartSchool {
                     name: 'wrapHtml',
                     type: 'boolean',
                     default: false,
-                    description: 'Convert plain text into a minimal HTML document with paragraphs and line breaks',
+                    description: 'Whether to convert plain text into a minimal HTML document with paragraphs and line breaks',
                     displayOptions: {
                         show: {
                             resource: ['helpdesk', 'message'],

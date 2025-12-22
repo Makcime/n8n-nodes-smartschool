@@ -1053,7 +1053,7 @@ export class SmartSchool implements INodeType {
 				type: 'boolean',
 				default: false,
 				description:
-					'Convert plain text into a minimal HTML document with paragraphs and line breaks',
+					'Whether to convert plain text into a minimal HTML document with paragraphs and line breaks',
 				displayOptions: {
 					show: {
 						resource: ['helpdesk', 'message'],
