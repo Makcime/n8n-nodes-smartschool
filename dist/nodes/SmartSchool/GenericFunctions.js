@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.plaintextToHtml = void 0;
 exports.getSmartSchoolCredentials = getSmartSchoolCredentials;
 exports.callSmartschoolSoap = callSmartschoolSoap;
 const n8n_workflow_1 = require("n8n-workflow");
@@ -9,6 +10,7 @@ const xmlEscape = (value) => value
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
+const htmlEscape = (value) => xmlEscape(value);
 const decodeXmlEntities = (value) => value
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
@@ -137,6 +139,19 @@ const parseSoapResponse = async (xml) => {
     }
     return normalizedValue;
 };
+const plaintextToHtml = (value) => {
+    const trimmed = value.trim();
+    const escaped = htmlEscape(trimmed);
+    if (!escaped) {
+        return '<html><body></body></html>';
+    }
+    const paragraphs = escaped
+        .split(/\n{2,}/)
+        .map((paragraph) => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`)
+        .join('');
+    return `<html><body>${paragraphs}</body></html>`;
+};
+exports.plaintextToHtml = plaintextToHtml;
 async function getSmartSchoolCredentials() {
     const credentials = (await this.getCredentials('smartSchoolApi'));
     const apiEndpoint = credentials === null || credentials === void 0 ? void 0 : credentials.apiEndpoint;

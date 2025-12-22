@@ -975,6 +975,19 @@ class SmartSchool {
                     },
                 },
                 {
+                    displayName: 'Wrap HTML',
+                    name: 'wrapHtml',
+                    type: 'boolean',
+                    default: false,
+                    description: 'Convert plain text into a minimal HTML document with paragraphs and line breaks',
+                    displayOptions: {
+                        show: {
+                            resource: ['helpdesk', 'message'],
+                            operation: ['addHelpdeskTicket', 'sendMsg'],
+                        },
+                    },
+                },
+                {
                     displayName: 'Priority',
                     name: 'priority',
                     type: 'number',
@@ -2177,12 +2190,13 @@ class SmartSchool {
                     if (operation === 'addHelpdeskTicket') {
                         const title = this.getNodeParameter('title', itemIndex);
                         const description = this.getNodeParameter('ticketDescription', itemIndex);
+                        const wrapHtml = this.getNodeParameter('wrapHtml', itemIndex, false);
                         const priority = this.getNodeParameter('priority', itemIndex);
                         const miniDbItem = this.getNodeParameter('miniDbItem', itemIndex);
                         const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
                         const response = await callMethod('addHelpdeskTicket', {
                             title,
-                            description,
+                            description: wrapHtml ? (0, GenericFunctions_1.plaintextToHtml)(description) : description,
                             priority,
                             miniDbItem,
                             userIdentifier,
@@ -2200,6 +2214,7 @@ class SmartSchool {
                     const userIdentifier = this.getNodeParameter('userIdentifier', itemIndex);
                     const title = this.getNodeParameter('title', itemIndex);
                     const body = this.getNodeParameter('messageBody', itemIndex);
+                    const wrapHtml = this.getNodeParameter('wrapHtml', itemIndex, false);
                     const senderIdentifier = this.getNodeParameter('senderIdentifier', itemIndex);
                     const coaccount = this.getNodeParameter('coaccount', itemIndex, 0);
                     const copyToLVS = this.getNodeParameter('copyToLVS', itemIndex, false);
@@ -2207,7 +2222,7 @@ class SmartSchool {
                     const payload = {
                         userIdentifier,
                         title,
-                        body,
+                        body: wrapHtml ? (0, GenericFunctions_1.plaintextToHtml)(body) : body,
                         senderIdentifier,
                         coaccount,
                         copyToLVS,
