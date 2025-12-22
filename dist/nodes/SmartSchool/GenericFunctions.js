@@ -15,7 +15,93 @@ const decodeXmlEntities = (value) => value
     .replace(/&quot;/g, '"')
     .replace(/&apos;/g, "'")
     .replace(/&amp;/g, '&');
-const parseSoapResponse = (xml) => {
+const maybeDecodeBase64 = (value) => {
+    if (!/^[A-Za-z0-9+/=\s]+$/.test(value)) {
+        return value;
+    }
+    try {
+        const decoded = Buffer.from(value, 'base64').toString('utf8');
+        if (!decoded || decoded === value) {
+            return value;
+        }
+        if (/^<\?xml|^</.test(decoded.trim()) ||
+            /^\s*\{/.test(decoded) ||
+            /^\s*\[/.test(decoded)) {
+            return decoded;
+        }
+        return value;
+    }
+    catch {
+        return value;
+    }
+};
+const parseXmlSimple = (xml) => {
+    var _a;
+    const cleaned = xml
+        .replace(/<\?xml[\s\S]*?\?>/i, '')
+        .replace(/<!DOCTYPE[\s\S]*?>/i, '')
+        .replace(/<!--[\s\S]*?-->/g, '')
+        .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, (_, cdata) => cdata);
+    const root = { name: '__root__', attributes: {}, children: [], text: '' };
+    const stack = [root];
+    const tagRegex = /<([^>]+)>/g;
+    let lastIndex = 0;
+    for (const match of cleaned.matchAll(tagRegex)) {
+        const text = cleaned.slice(lastIndex, match.index).trim();
+        if (text) {
+            stack[stack.length - 1].text += text;
+        }
+        const tag = match[1];
+        if (tag.startsWith('/')) {
+            stack.pop();
+        }
+        else {
+            const selfClosing = tag.endsWith('/');
+            const [rawName, ...attrParts] = tag.replace(/\/$/, '').trim().split(/\s+/);
+            const attrs = {};
+            const attrRegex = /(\w+)=["']([^"']*)["']/g;
+            const attrString = attrParts.join(' ');
+            for (const attrMatch of attrString.matchAll(attrRegex)) {
+                attrs[attrMatch[1]] = decodeXmlEntities(attrMatch[2]);
+            }
+            const node = { name: rawName, attributes: attrs, children: [], text: '' };
+            stack[stack.length - 1].children.push(node);
+            if (!selfClosing) {
+                stack.push(node);
+            }
+        }
+        lastIndex = match.index + match[0].length;
+    }
+    const normalize = (node) => {
+        const hasChildren = node.children.length > 0;
+        const hasAttrs = Object.keys(node.attributes).length > 0;
+        const text = node.text.trim();
+        const result = {};
+        if (hasAttrs) {
+            result._attributes = node.attributes;
+        }
+        for (const child of node.children) {
+            const value = normalize(child);
+            if (result[child.name]) {
+                const existing = result[child.name];
+                result[child.name] = Array.isArray(existing) ? [...existing, value] : [existing, value];
+            }
+            else {
+                result[child.name] = value;
+            }
+        }
+        if (!hasChildren && !hasAttrs) {
+            return text;
+        }
+        if (text) {
+            result._text = text;
+        }
+        return result;
+    };
+    const normalized = normalize(root);
+    return (_a = normalized.__root__) !== null && _a !== void 0 ? _a : normalized;
+};
+const parseSoapResponse = async (xml) => {
     const faultMatch = xml.match(/<faultstring[^>]*>([\s\S]*?)<\/faultstring>/i);
     if (faultMatch === null || faultMatch === void 0 ? void 0 : faultMatch[1]) {
         const message = decodeXmlEntities(faultMatch[1].trim());
@@ -26,25 +112,30 @@ const parseSoapResponse = (xml) => {
         return xml;
     }
     const rawValue = decodeXmlEntities(returnMatch[1]).trim();
-    if (rawValue === '') {
+    const decodedValue = maybeDecodeBase64(rawValue);
+    const normalizedValue = decodeXmlEntities(decodedValue).trim();
+    if (normalizedValue === '') {
         return '';
     }
-    if (rawValue === 'true' || rawValue === 'false') {
-        return rawValue === 'true';
+    if (normalizedValue === 'true' || normalizedValue === 'false') {
+        return normalizedValue === 'true';
     }
-    if (/^-?\d+(\.\d+)?$/.test(rawValue)) {
-        return Number(rawValue);
+    if (/^-?\d+(\.\d+)?$/.test(normalizedValue)) {
+        return Number(normalizedValue);
     }
-    if ((rawValue.startsWith('{') && rawValue.endsWith('}')) ||
-        (rawValue.startsWith('[') && rawValue.endsWith(']'))) {
+    if ((normalizedValue.startsWith('{') && normalizedValue.endsWith('}')) ||
+        (normalizedValue.startsWith('[') && normalizedValue.endsWith(']'))) {
         try {
-            return JSON.parse(rawValue);
+            return JSON.parse(normalizedValue);
         }
         catch {
-            return rawValue;
+            return normalizedValue;
         }
     }
-    return rawValue;
+    if (normalizedValue.startsWith('<')) {
+        return parseXmlSimple(normalizedValue);
+    }
+    return normalizedValue;
 };
 async function getSmartSchoolCredentials() {
     const credentials = (await this.getCredentials('smartSchoolApi'));
@@ -65,7 +156,7 @@ async function callSmartschoolSoap(method, params) {
         `<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:tns="${namespace}">` +
         `<soap:Body><tns:${method}>${paramXml}</tns:${method}></soap:Body>` +
         `</soap:Envelope>`;
-    return this.helpers.httpRequest({
+    const response = await this.helpers.httpRequest({
         method: 'POST',
         url: apiEndpoint,
         headers: {
@@ -74,6 +165,7 @@ async function callSmartschoolSoap(method, params) {
         },
         body: envelope,
         json: false,
-    }).then(parseSoapResponse);
+    });
+    return parseSoapResponse(response);
 }
 //# sourceMappingURL=GenericFunctions.js.map
