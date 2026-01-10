@@ -92,7 +92,10 @@ type SupportedOperation =
 	| 'getGradebookPupilTree'
 	| 'getGradebookCategories'
 	| 'getGradebookCategoryGradesByPupil'
-	| 'getGradebookOtherCategoryGradesByGroup';
+	| 'getGradebookOtherCategoryGradesByGroup'
+	| 'getPresenceConfig'
+	| 'getPresenceClass'
+	| 'getPresenceDayAllClasses';
 
 export class SmartSchool implements INodeType {
 	description: INodeTypeDescription = {
@@ -515,6 +518,24 @@ export class SmartSchool implements INodeType {
 						value: 'getGradebookOtherCategoryGradesByGroup',
 						description: 'Fetch group grades for a gradebook category',
 						action: 'Get gradebook category grades by group',
+					},
+					{
+						name: 'Get Presence Config',
+						value: 'getPresenceConfig',
+						description: 'Fetch allowed classes and hour mappings for presences',
+						action: 'Get presence config',
+					},
+					{
+						name: 'Get Presence Class',
+						value: 'getPresenceClass',
+						description: 'Fetch raw presence entries for a class and hour',
+						action: 'Get presence class',
+					},
+					{
+						name: 'Get Presence Day (All Classes)',
+						value: 'getPresenceDayAllClasses',
+						description: 'Fetch and flatten presence entries for all classes and hours',
+						action: 'Get presence day all classes',
 					},
 				],
 			},
@@ -1694,7 +1715,22 @@ export class SmartSchool implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['portal'],
-						operation: ['validateSession', 'fetchPlanner', 'fetchEmailInbox', 'fetchEmail', 'fetchResults'],
+						operation: [
+							'validateSession',
+							'fetchPlanner',
+							'fetchEmailInbox',
+							'fetchEmail',
+							'fetchResults',
+							'getGradebookTemplates',
+							'getGradebookConfig',
+							'getGradebookPupilTree',
+							'getGradebookCategories',
+							'getGradebookCategoryGradesByPupil',
+							'getGradebookOtherCategoryGradesByGroup',
+							'getPresenceConfig',
+							'getPresenceClass',
+							'getPresenceDayAllClasses',
+						],
 					},
 				},
 			},
@@ -1898,6 +1934,101 @@ export class SmartSchool implements INodeType {
 					show: {
 						resource: ['portal'],
 						operation: ['getGradebookOtherCategoryGradesByGroup'],
+					},
+				},
+			},
+			{
+				displayName: 'Presence Group ID',
+				name: 'presenceGroupId',
+				type: 'number',
+				default: 0,
+				required: true,
+				description: 'Group/class ID for the presence request',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: ['getPresenceConfig', 'getPresenceClass', 'getPresenceDayAllClasses'],
+					},
+				},
+			},
+			{
+				displayName: 'Presence Date',
+				name: 'presenceDate',
+				type: 'dateTime',
+				default: '',
+				required: true,
+				description: 'Date for the presence request',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: ['getPresenceConfig', 'getPresenceClass', 'getPresenceDayAllClasses'],
+					},
+				},
+			},
+			{
+				displayName: 'Presence User ID',
+				name: 'presenceUserId',
+				type: 'number',
+				default: 0,
+				required: true,
+				description: 'User ID required to request a presence token',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: ['getPresenceConfig', 'getPresenceClass', 'getPresenceDayAllClasses'],
+					},
+				},
+			},
+			{
+				displayName: 'Presence Hour ID',
+				name: 'presenceHourId',
+				type: 'number',
+				default: 0,
+				required: true,
+				description: 'Hour ID from presence config hourBlocks',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: ['getPresenceClass'],
+					},
+				},
+			},
+			{
+				displayName: 'Official',
+				name: 'presenceOfficial',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to fetch official presences',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: ['getPresenceClass', 'getPresenceDayAllClasses'],
+					},
+				},
+			},
+			{
+				displayName: 'Only Active Hours',
+				name: 'presenceOnlyActiveHours',
+				type: 'boolean',
+				default: false,
+				description: 'Only fetch hours marked active in the presence config',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: ['getPresenceDayAllClasses'],
+					},
+				},
+			},
+			{
+				displayName: 'Class IDs (comma-separated)',
+				name: 'presenceClassIds',
+				type: 'string',
+				default: '',
+				description: 'Optional list of class/group IDs to limit the export',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: ['getPresenceDayAllClasses'],
 					},
 				},
 			},
@@ -2267,6 +2398,192 @@ export class SmartSchool implements INodeType {
 						const gradebookData = data as IDataObject | IDataObject[];
 						returnData.push({
 							json: { gradebookData },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (
+						operation === 'getPresenceConfig' ||
+						operation === 'getPresenceClass' ||
+						operation === 'getPresenceDayAllClasses'
+					) {
+						const phpSessId = this.getNodeParameter('phpSessId', itemIndex) as string;
+						const presenceGroupId = this.getNodeParameter('presenceGroupId', itemIndex) as number;
+						const presenceDate = this.getNodeParameter('presenceDate', itemIndex) as string;
+						const presenceUserId = this.getNodeParameter('presenceUserId', itemIndex) as number;
+						const presenceDateOnly = presenceDate.split('T')[0];
+						const tokenResponse = await safeFetch.call(
+							this,
+							`https://${normalizedDomain}/Topnav/Node/getToken`,
+							{
+								method: 'POST',
+								headers: {
+									accept: '*/*',
+									'content-type': 'text/plain',
+									cookie: `PHPSESSID=${phpSessId}`,
+									'x-requested-with': 'XMLHttpRequest',
+								},
+								body: JSON.stringify({ userID: presenceUserId }),
+							},
+						);
+						const presenceToken = (await tokenResponse.text()).trim();
+						const presenceTokenHeaders = {
+							'x-smsc-token': presenceToken,
+							'smsc-token': presenceToken,
+							'x-token': presenceToken,
+						};
+
+						const fetchPresenceConfig = async () => {
+							const response = await safeFetch.call(
+								this,
+								`https://${normalizedDomain}/Presence/Main/getConfig`,
+								{
+									method: 'POST',
+									headers: {
+										accept: 'application/json, text/javascript, */*; q=0.01',
+										'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+										cookie: `PHPSESSID=${phpSessId}`,
+										'x-requested-with': 'XMLHttpRequest',
+										...presenceTokenHeaders,
+									},
+									body: `route_controller=photoview&route_subcontroller=&groupID=${encodeURIComponent(
+										String(presenceGroupId),
+									)}&userID=${encodeURIComponent(
+										String(presenceUserId),
+									)}&date=${encodeURIComponent(presenceDateOnly)}&token=${encodeURIComponent(
+										presenceToken,
+									)}`,
+								},
+							);
+							const data = await parsePortalJson(response, 'presence config');
+							const config = data as IDataObject;
+							const main = (config.main ?? {}) as IDataObject;
+							const allowedClasses = (main.allowedClasses ?? []) as IDataObject[];
+							const hourBlocks = (main.hourBlocks ?? []) as IDataObject[];
+							return { config, allowedClasses, hourBlocks };
+						};
+
+						const fetchPresenceClass = async (classId: number, hourId: number) => {
+							const response = await safeFetch.call(
+								this,
+								`https://${normalizedDomain}/Presence/Class/getClass`,
+								{
+									method: 'POST',
+									headers: {
+										accept: 'application/json, text/javascript, */*; q=0.01',
+										'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+										cookie: `PHPSESSID=${phpSessId}`,
+										'x-requested-with': 'XMLHttpRequest',
+										...presenceTokenHeaders,
+									},
+									body: [
+										`classID=${encodeURIComponent(String(classId))}`,
+										`hourID=${encodeURIComponent(String(hourId))}`,
+										`startDate=${encodeURIComponent(presenceDateOnly)}`,
+										`official=${(this.getNodeParameter('presenceOfficial', itemIndex) as boolean)
+											? '1'
+											: '0'}`,
+										'partOfDay=',
+										'includeClass=1',
+										'includePupils=true',
+										'includePupilPhoto=true',
+										'currentPupilsOnly=true',
+										'includePresences=true',
+										'includeDefault=true',
+										'defaultPresenceMutation=false',
+										`userID=${encodeURIComponent(String(presenceUserId))}`,
+										`token=${encodeURIComponent(presenceToken)}`,
+									].join('&'),
+								},
+							);
+							return await parsePortalJson(response, 'presence class');
+						};
+
+						if (operation === 'getPresenceConfig') {
+							const { config, allowedClasses, hourBlocks } = await fetchPresenceConfig();
+							returnData.push({
+								json: { presenceConfig: config, allowedClasses, hourBlocks },
+								pairedItem: { item: itemIndex },
+							});
+							continue;
+						}
+
+						if (operation === 'getPresenceClass') {
+							const presenceHourId = this.getNodeParameter('presenceHourId', itemIndex) as number;
+							const data = await fetchPresenceClass(presenceGroupId, presenceHourId);
+							returnData.push({
+								json: { presenceClass: data },
+								pairedItem: { item: itemIndex },
+							});
+							continue;
+						}
+
+						const { allowedClasses, hourBlocks } = await fetchPresenceConfig();
+						const presenceOnlyActiveHours = this.getNodeParameter(
+							'presenceOnlyActiveHours',
+							itemIndex,
+						) as boolean;
+						const presenceClassIdsRaw = this.getNodeParameter(
+							'presenceClassIds',
+							itemIndex,
+						) as string;
+						const classIdFilter = presenceClassIdsRaw
+							.split(/[\s,]+/)
+							.map((value) => value.trim())
+							.filter(Boolean)
+							.map((value) => Number(value))
+							.filter((value) => !Number.isNaN(value));
+						const classesToFetch =
+							classIdFilter.length > 0
+								? allowedClasses.filter((entry) =>
+										classIdFilter.includes(entry.groupID as number),
+									)
+								: allowedClasses;
+						const hoursToFetch = presenceOnlyActiveHours
+							? hourBlocks.filter((hour) => Boolean(hour.active))
+							: hourBlocks;
+
+						const rows: IDataObject[] = [];
+						for (const classEntry of classesToFetch) {
+							const classId = classEntry.groupID as number;
+							const className = classEntry.name as string;
+							for (const hourEntry of hoursToFetch) {
+								const hourId = hourEntry.hourID as number;
+								const hourTitle = hourEntry.title as string;
+								const classData = (await fetchPresenceClass(classId, hourId)) as IDataObject;
+								const pupils = (classData.pupils ?? []) as IDataObject[];
+								for (const pupil of pupils) {
+									const presences = (pupil.presence ?? []) as IDataObject[];
+									for (const presence of presences) {
+										const code = (presence.code ?? {}) as IDataObject;
+										rows.push({
+											classId,
+											className,
+											hourId,
+											hourTitle,
+											presenceDate: presence.presenceDate ?? presenceDateOnly,
+											pupilId: pupil.userID ?? pupil.userId,
+											pupilName: pupil.name,
+											pupilSurname: pupil.surname,
+											pupilFullName: pupil.nameBIN ?? pupil.name,
+											presenceId: presence.presenceID,
+											codeId: presence.codeID ?? code.codeID,
+											codeName: code.name,
+											codeColor: code.color,
+											isOfficial: code.isOfficial ?? presence.isOfficial,
+											lastAuthorName: presence.lastAuthorName,
+											lastAuthorUserIdentifier: presence.lastAuthorUserIdentifier,
+											encodedAt: presence.date,
+											movementId: presence.movementID,
+										});
+									}
+								}
+							}
+						}
+
+						returnData.push({
+							json: { presenceRows: rows },
 							pairedItem: { item: itemIndex },
 						});
 						continue;

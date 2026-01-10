@@ -16,9 +16,14 @@ export async function safeFetch(
 		}
 
 		if (response.status >= 500) {
+			let responseText = '';
+			try {
+				responseText = await response.text();
+			} catch (_) {}
+			const snippet = responseText ? ` Response: ${responseText.slice(0, 500)}` : '';
 			throw new NodeOperationError(
 				this.getNode(),
-				`HTTP error! Smartschool server seems to be down or unreachable. Status: ${response.status}`,
+				`HTTP error! Smartschool server seems to be down or unreachable. Status: ${response.status}.${snippet}`,
 			);
 		}
 
