@@ -5,11 +5,14 @@ import type {
 	INodeType,
 	INodeTypeDescription,
 } from 'n8n-workflow';
+import { XMLParser } from 'fast-xml-parser';
 import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 import { callSmartschoolSoap, getSmartSchoolCredentials, plaintextToHtml } from './GenericFunctions';
 import { ACCOUNT_STATUS_OPTIONS, VISIBILITY_OPTIONS } from './shared/fields';
 import { SMARTSCHOOL_ERROR_CODES } from './shared/errorCodes';
+import { safeFetch } from './portal/safeFetch';
+import { smscHeadlessLogin } from './portal/smscHeadlessLogin';
 
 type SupportedResource =
 	| 'group'
@@ -19,7 +22,8 @@ type SupportedResource =
 	| 'parameter'
 	| 'absence'
 	| 'course'
-	| 'system';
+	| 'system'
+	| 'portal';
 type SupportedOperation =
 	| 'getAllAccounts'
 	| 'getAllAccountsExtended'
@@ -76,7 +80,19 @@ type SupportedOperation =
 	| 'savePassword'
 	| 'deactivateTwoFactorAuthentication'
 	| 'changeGroupVisibility'
-	| 'getDeliberationLines';
+	| 'getDeliberationLines'
+	| 'generateSession'
+	| 'validateSession'
+	| 'fetchPlanner'
+	| 'fetchEmailInbox'
+	| 'fetchEmail'
+	| 'fetchResults'
+	| 'getGradebookTemplates'
+	| 'getGradebookConfig'
+	| 'getGradebookPupilTree'
+	| 'getGradebookCategories'
+	| 'getGradebookCategoryGradesByPupil'
+	| 'getGradebookOtherCategoryGradesByGroup';
 
 export class SmartSchool implements INodeType {
 	description: INodeTypeDescription = {
@@ -96,6 +112,29 @@ export class SmartSchool implements INodeType {
 				name: 'smartSchoolApi',
 				required: true,
 				testedBy: 'smartSchool',
+				displayOptions: {
+					show: {
+						resource: [
+							'absence',
+							'account',
+							'course',
+							'group',
+							'helpdesk',
+							'message',
+							'parameter',
+							'system',
+						],
+					},
+				},
+			},
+			{
+				name: 'SmartschoolPortalApi',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+					},
+				},
 			},
 		],
 		requestDefaults: {
@@ -140,6 +179,10 @@ export class SmartSchool implements INodeType {
 					{
 						name: 'System',
 						value: 'system',
+					},
+					{
+						name: 'Portal',
+						value: 'portal',
 					},
 				],
 			},
@@ -386,6 +429,92 @@ export class SmartSchool implements INodeType {
 						value: 'getDeliberationLines',
 						description: 'Retrieve deliberation lines for a date in the school year',
 						action: 'Get deliberation lines',
+					},
+				],
+			},
+			{
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				default: 'generateSession',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+					},
+				},
+				options: [
+					{
+						name: 'Generate Session',
+						value: 'generateSession',
+						description: 'Log in and return PHPSESSID + user ID',
+						action: 'Generate session',
+					},
+					{
+						name: 'Validate Session',
+						value: 'validateSession',
+						description: 'Check whether a PHPSESSID is still valid',
+						action: 'Validate session',
+					},
+					{
+						name: 'Fetch Planner',
+						value: 'fetchPlanner',
+						description: 'Fetch planner items for a date range',
+						action: 'Fetch planner',
+					},
+					{
+						name: 'Fetch Email Inbox',
+						value: 'fetchEmailInbox',
+						description: 'Fetch inbox messages via Smartschool web endpoints',
+						action: 'Fetch email inbox',
+					},
+					{
+						name: 'Fetch Email',
+						value: 'fetchEmail',
+						description: 'Fetch a single inbox message by ID',
+						action: 'Fetch email',
+					},
+					{
+						name: 'Fetch Results',
+						value: 'fetchResults',
+						description: 'Fetch latest results for the account',
+						action: 'Fetch results',
+					},
+					{
+						name: 'Get Gradebook Templates',
+						value: 'getGradebookTemplates',
+						description: 'Fetch Skore gradebook templates',
+						action: 'Get gradebook templates',
+					},
+					{
+						name: 'Get Gradebook Config',
+						value: 'getGradebookConfig',
+						description: 'Fetch Skore gradebook configuration for a template',
+						action: 'Get gradebook config',
+					},
+					{
+						name: 'Get Gradebook Pupil Tree',
+						value: 'getGradebookPupilTree',
+						description: 'Fetch class and pupil hierarchy for the gradebook',
+						action: 'Get gradebook pupil tree',
+					},
+					{
+						name: 'Get Gradebook Categories',
+						value: 'getGradebookCategories',
+						description: 'Fetch gradebook categories for a template',
+						action: 'Get gradebook categories',
+					},
+					{
+						name: 'Get Gradebook Category Grades (Pupil)',
+						value: 'getGradebookCategoryGradesByPupil',
+						description: 'Fetch pupil grades for a gradebook category',
+						action: 'Get gradebook category grades by pupil',
+					},
+					{
+						name: 'Get Gradebook Category Grades (Group)',
+						value: 'getGradebookOtherCategoryGradesByGroup',
+						description: 'Fetch group grades for a gradebook category',
+						action: 'Get gradebook category grades by group',
 					},
 				],
 			},
@@ -1556,6 +1685,223 @@ export class SmartSchool implements INodeType {
 				],
 			},
 			{
+				displayName: 'PHPSESSID',
+				name: 'phpSessId',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Session cookie returned by Generate Session',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: ['validateSession', 'fetchPlanner', 'fetchEmailInbox', 'fetchEmail', 'fetchResults'],
+					},
+				},
+			},
+			{
+				displayName: 'User ID',
+				name: 'userId',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Smartschool numeric user ID returned by Generate Session',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: ['fetchPlanner'],
+					},
+				},
+			},
+			{
+				displayName: 'From Date',
+				name: 'fromDate',
+				type: 'dateTime',
+				default: '',
+				required: true,
+				description: 'Start date for planner items',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: ['fetchPlanner'],
+					},
+				},
+			},
+			{
+				displayName: 'To Date',
+				name: 'toDate',
+				type: 'dateTime',
+				default: '',
+				required: true,
+				description: 'End date for planner items',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: ['fetchPlanner'],
+					},
+				},
+			},
+			{
+				displayName: 'Types',
+				name: 'types',
+				type: 'multiOptions',
+				default: ['planned-assignments'],
+				description: 'Planner item types to fetch',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: ['fetchPlanner'],
+					},
+				},
+				options: [
+					{
+						name: 'Planned Assignments',
+						value: 'planned-assignments',
+					},
+					{
+						name: 'Planned To-Dos',
+						value: 'planned-to-dos',
+					},
+					{
+						name: 'Planned Lesson Cluster Assignments',
+						value: 'planned-lesson-cluster-assignments',
+					},
+				],
+			},
+			{
+				displayName: 'Email ID',
+				name: 'mailId',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'ID of the email to fetch',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: ['fetchEmail'],
+					},
+				},
+			},
+			{
+				displayName: 'Mailbox',
+				name: 'mailbox',
+				type: 'options',
+				default: 'inbox',
+				description: 'Mailbox to fetch messages from',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: ['fetchEmailInbox', 'fetchEmail'],
+					},
+				},
+				options: [
+					{
+						name: 'Inbox',
+						value: 'inbox',
+					},
+					{
+						name: 'Sent',
+						value: 'outbox',
+					},
+				],
+			},
+			{
+				displayName: 'Amount of Results (latest first)',
+				name: 'amountOfResults',
+				type: 'number',
+				default: 9999,
+				required: true,
+				typeOptions: {
+					minValue: 1,
+				},
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: ['fetchResults'],
+					},
+				},
+			},
+			{
+				displayName: 'Gradebook Context (JSON)',
+				name: 'gradebookContext',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Context JSON payload from the Skore gradebook requests',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: [
+							'getGradebookTemplates',
+							'getGradebookConfig',
+							'getGradebookPupilTree',
+							'getGradebookCategories',
+							'getGradebookCategoryGradesByPupil',
+							'getGradebookOtherCategoryGradesByGroup',
+						],
+					},
+				},
+			},
+			{
+				displayName: 'Gradebook Template (JSON)',
+				name: 'gradebookTemplate',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Template JSON payload from the Skore gradebook requests',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: [
+							'getGradebookConfig',
+							'getGradebookCategories',
+							'getGradebookCategoryGradesByPupil',
+						],
+					},
+				},
+			},
+			{
+				displayName: 'Gradebook Pupil (JSON)',
+				name: 'gradebookPupil',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Pupil JSON payload from the Skore gradebook requests',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: ['getGradebookCategoryGradesByPupil'],
+					},
+				},
+			},
+			{
+				displayName: 'Gradebook Group (JSON)',
+				name: 'gradebookGroup',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Group JSON payload from the Skore gradebook requests',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: ['getGradebookOtherCategoryGradesByGroup'],
+					},
+				},
+			},
+			{
+				displayName: 'Gradebook Class',
+				name: 'gradebookClass',
+				type: 'string',
+				default: '',
+				required: false,
+				description: 'Class value for group gradebook requests (leave empty when not needed)',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: ['getGradebookOtherCategoryGradesByGroup'],
+					},
+				},
+			},
+			{
 				displayName: 'Sender Identifier',
 				name: 'senderIdentifier',
 				type: 'string',
@@ -1660,7 +2006,14 @@ export class SmartSchool implements INodeType {
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
-		const { accesscode } = await getSmartSchoolCredentials.call(this);
+		let accesscode: string | null = null;
+		const getAccesscode = async () => {
+			if (!accesscode) {
+				const credentials = await getSmartSchoolCredentials.call(this);
+				accesscode = credentials.accesscode;
+			}
+			return accesscode;
+		};
 
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			const normalizeAndPush = (data: unknown) => {
@@ -1714,8 +2067,9 @@ export class SmartSchool implements INodeType {
 				method: string,
 				params: Record<string, string | number | boolean>,
 			) => {
+				const accesscodeValue = await getAccesscode();
 				const result = await callSmartschoolSoap.call(this, method, {
-					accesscode,
+					accesscode: accesscodeValue,
 					...params,
 				});
 				maybeThrowSmartschoolError(result);
@@ -1725,6 +2079,326 @@ export class SmartSchool implements INodeType {
 			try {
 				const resource = this.getNodeParameter('resource', itemIndex) as SupportedResource;
 				const operation = this.getNodeParameter('operation', itemIndex) as SupportedOperation;
+
+				if (resource === 'portal') {
+					const sessionCreds = await this.getCredentials('SmartschoolPortalApi');
+					const normalizedDomain = (sessionCreds.domain as string)
+						.replace(/^https?:\/\//, '')
+						.replace(/\/+$/, '');
+
+					const parsePortalJson = async (response: Response, label: string) => {
+						try {
+							return await response.json();
+						} catch (error) {
+							throw new NodeOperationError(
+								this.getNode(),
+								`Failed to parse ${label} response to JSON, check your PHPSESSID and/or User ID: ${(error as Error).message}`,
+								{ itemIndex },
+							);
+						}
+					};
+					const parsePortalJsonParam = (value: string, label: string) => {
+						const trimmed = value.trim();
+						if (!trimmed) {
+							throw new NodeOperationError(this.getNode(), `${label} is required`, { itemIndex });
+						}
+						try {
+							return JSON.stringify(JSON.parse(trimmed));
+						} catch (error) {
+							throw new NodeOperationError(
+								this.getNode(),
+								`Invalid JSON for ${label}: ${(error as Error).message}`,
+								{ itemIndex },
+							);
+						}
+					};
+					const postGradebook = async (
+						endpoint: string,
+						params: Record<string, string>,
+						phpSessId: string,
+					) => {
+						const body = Object.entries(params)
+							.map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+							.join('&');
+						const response = await safeFetch.call(
+							this,
+							`https://${normalizedDomain}/Gradebook/Main/${endpoint}`,
+							{
+								method: 'POST',
+								headers: {
+									'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+									cookie: `PHPSESSID=${phpSessId}`,
+								},
+								body,
+							},
+						);
+						return await parsePortalJson(response, `gradebook ${endpoint}`);
+					};
+
+					if (operation === 'generateSession') {
+						const result = await smscHeadlessLogin(sessionCreds as {
+							domain: string;
+							username: string;
+							password: string;
+							birthdate: string;
+							totpSecret?: string;
+						});
+						returnData.push({
+							json: {
+								success: true,
+								phpSessId: result.phpSessId,
+								userId: result.userId,
+							},
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'validateSession') {
+						const phpSessId = this.getNodeParameter('phpSessId', itemIndex) as string;
+						const response = await fetch(`https://${normalizedDomain}`, {
+							headers: {
+								cookie: `PHPSESSID=${phpSessId}`,
+							},
+						});
+						returnData.push({
+							json: { valid: !response.redirected },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'fetchPlanner') {
+						const phpSessId = this.getNodeParameter('phpSessId', itemIndex) as string;
+						const userId = this.getNodeParameter('userId', itemIndex) as string;
+						const fromDate = this.getNodeParameter('fromDate', itemIndex) as string;
+						const toDate = this.getNodeParameter('toDate', itemIndex) as string;
+						const types = (
+							this.getNodeParameter('types', itemIndex) as string[] | string
+						).toString();
+
+						const plannerUrl = `https://${normalizedDomain}/planner/api/v1/planned-elements/user/${userId}?from=${fromDate.split('T')[0]}&to=${toDate.split('T')[0]}&types=${types}`;
+						const response = await safeFetch.call(this, plannerUrl, {
+							headers: {
+								cookie: `PHPSESSID=${phpSessId}`,
+							},
+						});
+
+						const data = await parsePortalJson(response, 'planner');
+						returnData.push({
+							json: { plannerData: data },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'fetchResults') {
+						const phpSessId = this.getNodeParameter('phpSessId', itemIndex) as string;
+						const amountOfResults = this.getNodeParameter('amountOfResults', itemIndex) as number;
+						const resultsUrl = `https://${normalizedDomain}/results/api/v1/evaluations/?pageNumber=1&itemsOnPage=${amountOfResults}`;
+						const response = await safeFetch.call(this, resultsUrl, {
+							headers: {
+								cookie: `PHPSESSID=${phpSessId}`,
+							},
+						});
+
+						const data = await parsePortalJson(response, 'results');
+						returnData.push({
+							json: { resultsData: data },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (
+						operation === 'getGradebookTemplates' ||
+						operation === 'getGradebookConfig' ||
+						operation === 'getGradebookPupilTree' ||
+						operation === 'getGradebookCategories' ||
+						operation === 'getGradebookCategoryGradesByPupil' ||
+						operation === 'getGradebookOtherCategoryGradesByGroup'
+					) {
+						const phpSessId = this.getNodeParameter('phpSessId', itemIndex) as string;
+						const contextRaw = this.getNodeParameter('gradebookContext', itemIndex) as string;
+						const context = parsePortalJsonParam(contextRaw, 'Gradebook Context');
+
+						let data: unknown;
+						if (operation === 'getGradebookTemplates') {
+							data = await postGradebook('getTemplateList', { context }, phpSessId);
+						} else if (operation === 'getGradebookConfig') {
+							const templateRaw = this.getNodeParameter('gradebookTemplate', itemIndex) as string;
+							const template = parsePortalJsonParam(templateRaw, 'Gradebook Template');
+							data = await postGradebook('getGradebookConfig', { context, template }, phpSessId);
+						} else if (operation === 'getGradebookPupilTree') {
+							data = await postGradebook('getPupilTree', { context }, phpSessId);
+						} else if (operation === 'getGradebookCategories') {
+							const templateRaw = this.getNodeParameter('gradebookTemplate', itemIndex) as string;
+							const template = parsePortalJsonParam(templateRaw, 'Gradebook Template');
+							data = await postGradebook('getCategoriesList', { context, template }, phpSessId);
+						} else if (operation === 'getGradebookCategoryGradesByPupil') {
+							const templateRaw = this.getNodeParameter('gradebookTemplate', itemIndex) as string;
+							const pupilRaw = this.getNodeParameter('gradebookPupil', itemIndex) as string;
+							const template = parsePortalJsonParam(templateRaw, 'Gradebook Template');
+							const pupil = parsePortalJsonParam(pupilRaw, 'Gradebook Pupil');
+							data = await postGradebook(
+								'getCategoryGradesByPupil',
+								{
+									context,
+									template,
+									pupil,
+								},
+								phpSessId,
+							);
+						} else {
+							const groupRaw = this.getNodeParameter('gradebookGroup', itemIndex) as string;
+							const group = parsePortalJsonParam(groupRaw, 'Gradebook Group');
+							const classValue = this.getNodeParameter('gradebookClass', itemIndex) as string;
+							data = await postGradebook(
+								'getOtherCategoryGradesByGroup',
+								{
+									context,
+									class: classValue ?? '',
+									group,
+								},
+								phpSessId,
+							);
+						}
+
+						const gradebookData = data as IDataObject | IDataObject[];
+						returnData.push({
+							json: { gradebookData },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'fetchEmailInbox' || operation === 'fetchEmail') {
+						const phpSessId = this.getNodeParameter('phpSessId', itemIndex) as string;
+						const mailbox = this.getNodeParameter('mailbox', itemIndex) as string;
+						const parser = new XMLParser({
+							ignoreAttributes: false,
+							trimValues: true,
+							parseTagValue: true,
+							htmlEntities: true,
+						});
+
+						const fetchMailWithCommand = async (commandXml: string) => {
+							const response = await safeFetch.call(
+								this,
+								`https://${normalizedDomain}/?module=Messages&file=dispatcher`,
+								{
+									headers: {
+										'content-type': 'application/x-www-form-urlencoded',
+										cookie: `PHPSESSID=${phpSessId}`,
+									},
+									body: `command=${encodeURIComponent(commandXml)}`,
+									method: 'POST',
+								},
+							);
+
+							const body = await response.text();
+							return parser.parse(body);
+						};
+
+						if (operation === 'fetchEmailInbox') {
+							const fetchInboxCommand = `<request>
+							<command>
+								<subsystem>postboxes</subsystem>
+								<action>message list</action>
+								<params>
+									<param name="boxType"><![CDATA[${mailbox}]]></param>
+									<param name="boxID"><![CDATA[0]]></param>
+									<param name="sortField"><![CDATA[date]]></param>
+									<param name="sortKey"><![CDATA[desc]]></param>
+									<param name="poll"><![CDATA[false]]></param>
+									<param name="poll_ids"><![CDATA[]]></param>
+									<param name="layout"><![CDATA[new]]></param>
+								</params>
+							</command>
+						</request>`;
+
+							const fetchMoreMailsCommand = `<request>
+								<command>
+									<subsystem>postboxes</subsystem>
+									<action>continue_messages</action>
+									<params>
+										<param name="boxID"><![CDATA[0]]></param>
+										<param name="boxType"><![CDATA[${mailbox}]]></param>
+										<param name="layout"><![CDATA[new]]></param>
+									</params>
+								</command>
+							</request>`;
+
+							const mails: IDataObject[] = [];
+							const startMailsJson = await fetchMailWithCommand(fetchInboxCommand);
+
+							let moreMails = false;
+							for (const msg of startMailsJson.server.response.actions.action[0].data.messages.message) {
+								mails.push(msg);
+							}
+
+							for (const msg of startMailsJson.server.response.actions.action) {
+								if (msg.command === 'continue_messages') {
+									moreMails = true;
+								}
+							}
+
+							while (moreMails) {
+								moreMails = false;
+								const moreMailsJson = await fetchMailWithCommand(fetchMoreMailsCommand);
+
+								for (const msg of moreMailsJson.server.response.actions.action[0].data.messages.message) {
+									mails.push(msg);
+								}
+
+								for (const msg of moreMailsJson.server.response.actions.action) {
+									if (msg.command === 'continue_messages') {
+										moreMails = true;
+									}
+								}
+							}
+
+							returnData.push({
+								json: { success: true, data: mails },
+								pairedItem: { item: itemIndex },
+							});
+							continue;
+						}
+
+						const mailId = this.getNodeParameter('mailId', itemIndex) as string;
+						const fetchMailCommand = `<request>
+						<command>
+							<subsystem>postboxes</subsystem>
+							<action>show message</action>
+							<params>
+								<param name="msgID"><![CDATA[${mailId}]]></param>
+								<param name="boxType"><![CDATA[${mailbox}]]></param>
+								<param name="limitList"><![CDATA[true]]></param>
+							</params>
+						</command>
+					</request>`;
+
+						const mailJson = await fetchMailWithCommand(fetchMailCommand);
+						let mail: IDataObject | null = null;
+						const msg = mailJson.server.response.actions.action.data.message;
+						if (msg) {
+							msg.body = msg.body.replace(/\n/g, '');
+							mail = msg;
+						}
+
+						returnData.push({
+							json: { success: true, data: mail },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					throw new NodeOperationError(
+						this.getNode(),
+						`Unsupported portal operation "${operation}"`,
+						{ itemIndex },
+					);
+				}
 
 				if (
 					resource === 'group' &&
