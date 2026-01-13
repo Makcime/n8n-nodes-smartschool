@@ -38,7 +38,8 @@
             "dist/credentials/SmartschoolPortalApi.credentials.js"
         ],
         "nodes": [
-            "dist/nodes/SmartSchool/SmartSchool.node.js"
+            "dist/nodes/SmartSchool/SmartSchool.node.js",
+            "dist/nodes/SmartSchool/SmartSchoolPortal.node.js"
         ]
     },
     "devDependencies": {

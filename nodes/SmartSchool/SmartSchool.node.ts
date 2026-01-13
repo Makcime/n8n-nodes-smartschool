@@ -120,29 +120,6 @@ export class SmartSchool implements INodeType {
 				name: 'smartSchoolApi',
 				required: true,
 				testedBy: 'smartSchool',
-				displayOptions: {
-					show: {
-						resource: [
-							'absence',
-							'account',
-							'course',
-							'group',
-							'helpdesk',
-							'message',
-							'parameter',
-							'system',
-						],
-					},
-				},
-			},
-			{
-				name: 'SmartschoolPortalApi',
-				required: true,
-				displayOptions: {
-					show: {
-						resource: ['portal'],
-					},
-				},
 			},
 		],
 		requestDefaults: {
@@ -187,10 +164,6 @@ export class SmartSchool implements INodeType {
 					{
 						name: 'System',
 						value: 'system',
-					},
-					{
-						name: 'Portal',
-						value: 'portal',
 					},
 				],
 			},
