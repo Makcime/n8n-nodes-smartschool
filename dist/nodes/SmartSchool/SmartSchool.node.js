@@ -2205,7 +2205,10 @@ class SmartSchool {
                         }
                     };
                     const parseScheduleCodes = (value) => {
-                        const trimmed = value.trim();
+                        if (value === null || value === undefined) {
+                            return [];
+                        }
+                        const trimmed = String(value).trim();
                         if (!trimmed) {
                             return [];
                         }
@@ -2222,7 +2225,7 @@ class SmartSchool {
                             }
                         }
                         return trimmed
-                            .split(/[\s,]+/)
+                            .split(/[\s,;]+/)
                             .map((entry) => entry.trim())
                             .filter(Boolean);
                     };

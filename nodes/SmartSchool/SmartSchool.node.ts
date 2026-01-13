@@ -2318,8 +2318,11 @@ export class SmartSchool implements INodeType {
 							);
 						}
 					};
-					const parseScheduleCodes = (value: string) => {
-						const trimmed = value.trim();
+					const parseScheduleCodes = (value: unknown) => {
+						if (value === null || value === undefined) {
+							return [] as string[];
+						}
+						const trimmed = String(value).trim();
 						if (!trimmed) {
 							return [] as string[];
 						}
@@ -2339,7 +2342,7 @@ export class SmartSchool implements INodeType {
 							}
 						}
 						return trimmed
-							.split(/[\s,]+/)
+							.split(/[\s,;]+/)
 							.map((entry) => entry.trim())
 							.filter(Boolean);
 					};
