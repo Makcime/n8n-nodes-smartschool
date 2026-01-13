@@ -5,6 +5,7 @@ class SmartschoolPortalApi {
     constructor() {
         this.name = 'SmartschoolPortalApi';
         this.displayName = 'Smartschool Portal Login';
+        this.icon = { light: 'file:../icons/smartschool.logo.svg', dark: 'file:../icons/smartschool.logo.dark.svg' };
         this.properties = [
             {
                 displayName: 'Smartschool Domain',

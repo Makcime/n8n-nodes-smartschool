@@ -1,8 +1,9 @@
-import type { ICredentialType, INodeProperties } from 'n8n-workflow';
+import type { Icon, ICredentialType, INodeProperties } from 'n8n-workflow';
 
 export class SmartschoolPortalApi implements ICredentialType {
 	name = 'SmartschoolPortalApi';
 	displayName = 'Smartschool Portal Login';
+	icon: Icon = { light: 'file:../icons/smartschool.logo.svg', dark: 'file:../icons/smartschool.logo.dark.svg' };
 	properties: INodeProperties[] = [
 		{
 			displayName: 'Smartschool Domain',
