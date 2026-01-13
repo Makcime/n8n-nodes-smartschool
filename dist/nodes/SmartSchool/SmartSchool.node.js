@@ -378,6 +378,24 @@ class SmartSchool {
                             action: 'Fetch planner',
                         },
                         {
+                            name: 'Get Planner Elements',
+                            value: 'getPlannerElements',
+                            description: 'Fetch planner elements for a date range (raw)',
+                            action: 'Get planner elements',
+                        },
+                        {
+                            name: 'Get Planner Calendars (Accessible)',
+                            value: 'getPlannerCalendarsAccessible',
+                            description: 'Fetch accessible platform calendars',
+                            action: 'Get planner calendars accessible',
+                        },
+                        {
+                            name: 'Get Planner Calendars (Readable)',
+                            value: 'getPlannerCalendarsReadable',
+                            description: 'Fetch readable platform calendars',
+                            action: 'Get planner calendars readable',
+                        },
+                        {
                             name: 'Fetch Email Inbox',
                             value: 'fetchEmailInbox',
                             description: 'Fetch inbox messages via Smartschool web endpoints',
@@ -1639,6 +1657,9 @@ class SmartSchool {
                             operation: [
                                 'validateSession',
                                 'fetchPlanner',
+                                'getPlannerElements',
+                                'getPlannerCalendarsAccessible',
+                                'getPlannerCalendarsReadable',
                                 'fetchEmailInbox',
                                 'fetchEmail',
                                 'fetchResults',
@@ -1711,7 +1732,7 @@ class SmartSchool {
                     displayOptions: {
                         show: {
                             resource: ['portal'],
-                            operation: ['fetchPlanner'],
+                            operation: ['fetchPlanner', 'getPlannerElements'],
                         },
                     },
                 },
@@ -1725,7 +1746,7 @@ class SmartSchool {
                     displayOptions: {
                         show: {
                             resource: ['portal'],
-                            operation: ['fetchPlanner'],
+                            operation: ['fetchPlanner', 'getPlannerElements'],
                         },
                     },
                 },
@@ -2116,7 +2137,7 @@ class SmartSchool {
         };
     }
     async execute() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t;
         const items = this.getInputData();
         const returnData = [];
         let accesscode = null;
@@ -2300,6 +2321,57 @@ class SmartSchool {
                         const data = await parsePortalJson(response, 'planner');
                         returnData.push({
                             json: { plannerData: data },
+                            pairedItem: { item: itemIndex },
+                        });
+                        continue;
+                    }
+                    if (operation === 'getPlannerElements') {
+                        const phpSessId = this.getNodeParameter('phpSessId', itemIndex);
+                        const userIdParam = this.getNodeParameter('userId', itemIndex, '');
+                        const inputUserId = (_c = (_b = (_a = this.getInputData()[itemIndex]) === null || _a === void 0 ? void 0 : _a.json) === null || _b === void 0 ? void 0 : _b.userId) !== null && _c !== void 0 ? _c : '';
+                        const userId = userIdParam || inputUserId;
+                        if (!userId) {
+                            throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'User ID is required for planner elements. Provide it in the node parameters or pass it from Generate Session.', { itemIndex });
+                        }
+                        const fromDate = this.getNodeParameter('fromDate', itemIndex);
+                        const toDate = this.getNodeParameter('toDate', itemIndex);
+                        const plannerUrl = `https://${normalizedDomain}/planner/api/v1/planned-elements/user/${userId}?from=${fromDate}&to=${toDate}`;
+                        const response = await safeFetch_1.safeFetch.call(this, plannerUrl, {
+                            headers: {
+                                cookie: buildCookieHeader(phpSessId),
+                            },
+                        });
+                        const data = await parsePortalJson(response, 'planner elements');
+                        returnData.push({
+                            json: { plannerElements: data },
+                            pairedItem: { item: itemIndex },
+                        });
+                        continue;
+                    }
+                    if (operation === 'getPlannerCalendarsAccessible') {
+                        const phpSessId = this.getNodeParameter('phpSessId', itemIndex);
+                        const response = await safeFetch_1.safeFetch.call(this, `https://${normalizedDomain}/planner/api/v1/calendars/accessible-platform-calendars`, {
+                            headers: {
+                                cookie: buildCookieHeader(phpSessId),
+                            },
+                        });
+                        const data = await parsePortalJson(response, 'planner calendars accessible');
+                        returnData.push({
+                            json: { plannerCalendarsAccessible: data },
+                            pairedItem: { item: itemIndex },
+                        });
+                        continue;
+                    }
+                    if (operation === 'getPlannerCalendarsReadable') {
+                        const phpSessId = this.getNodeParameter('phpSessId', itemIndex);
+                        const response = await safeFetch_1.safeFetch.call(this, `https://${normalizedDomain}/planner/api/v1/calendars/readable-platform-calendars`, {
+                            headers: {
+                                cookie: buildCookieHeader(phpSessId),
+                            },
+                        });
+                        const data = await parsePortalJson(response, 'planner calendars readable');
+                        returnData.push({
+                            json: { plannerCalendarsReadable: data },
                             pairedItem: { item: itemIndex },
                         });
                         continue;
@@ -2530,26 +2602,26 @@ class SmartSchool {
                                 const hourId = hourEntry.hourID;
                                 const hourTitle = hourEntry.title;
                                 const classData = (await fetchPresenceClass(classId, hourId));
-                                const pupils = ((_a = classData.pupils) !== null && _a !== void 0 ? _a : []);
+                                const pupils = ((_d = classData.pupils) !== null && _d !== void 0 ? _d : []);
                                 for (const pupil of pupils) {
-                                    const presences = ((_b = pupil.presence) !== null && _b !== void 0 ? _b : []);
+                                    const presences = ((_e = pupil.presence) !== null && _e !== void 0 ? _e : []);
                                     for (const presence of presences) {
-                                        const code = ((_c = presence.code) !== null && _c !== void 0 ? _c : {});
+                                        const code = ((_f = presence.code) !== null && _f !== void 0 ? _f : {});
                                         rows.push({
                                             classId,
                                             className,
                                             hourId,
                                             hourTitle,
-                                            presenceDate: (_d = presence.presenceDate) !== null && _d !== void 0 ? _d : presenceDateOnly,
-                                            pupilId: (_e = pupil.userID) !== null && _e !== void 0 ? _e : pupil.userId,
+                                            presenceDate: (_g = presence.presenceDate) !== null && _g !== void 0 ? _g : presenceDateOnly,
+                                            pupilId: (_h = pupil.userID) !== null && _h !== void 0 ? _h : pupil.userId,
                                             pupilName: pupil.name,
                                             pupilSurname: pupil.surname,
-                                            pupilFullName: (_f = pupil.nameBIN) !== null && _f !== void 0 ? _f : pupil.name,
+                                            pupilFullName: (_j = pupil.nameBIN) !== null && _j !== void 0 ? _j : pupil.name,
                                             presenceId: presence.presenceID,
-                                            codeId: (_g = presence.codeID) !== null && _g !== void 0 ? _g : code.codeID,
+                                            codeId: (_k = presence.codeID) !== null && _k !== void 0 ? _k : code.codeID,
                                             codeName: code.name,
                                             codeColor: code.color,
-                                            isOfficial: (_h = code.isOfficial) !== null && _h !== void 0 ? _h : presence.isOfficial,
+                                            isOfficial: (_l = code.isOfficial) !== null && _l !== void 0 ? _l : presence.isOfficial,
                                             lastAuthorName: presence.lastAuthorName,
                                             lastAuthorUserIdentifier: presence.lastAuthorUserIdentifier,
                                             encodedAt: presence.date,
@@ -2718,8 +2790,8 @@ class SmartSchool {
                     }
                     if (operation === 'saveGroup' || operation === 'saveClass') {
                         const details = this.getNodeParameter('groupClassDetails', itemIndex, {});
-                        const required = ((_j = details.required) !== null && _j !== void 0 ? _j : {});
-                        const optional = ((_k = details.optional) !== null && _k !== void 0 ? _k : {});
+                        const required = ((_m = details.required) !== null && _m !== void 0 ? _m : {});
+                        const optional = ((_o = details.optional) !== null && _o !== void 0 ? _o : {});
                         const payload = {
                             name: required.name,
                             desc: required.desc,
@@ -2906,10 +2978,10 @@ class SmartSchool {
                     }
                     if (operation === 'saveUser') {
                         const profile = this.getNodeParameter('userProfile', itemIndex, {});
-                        const required = ((_l = profile.required) !== null && _l !== void 0 ? _l : {});
-                        const optional = ((_m = profile.optional) !== null && _m !== void 0 ? _m : {});
-                        const custom = ((_o = profile.custom) !== null && _o !== void 0 ? _o : {});
-                        const customFieldsRaw = ((_p = custom.customFields) !== null && _p !== void 0 ? _p : '');
+                        const required = ((_p = profile.required) !== null && _p !== void 0 ? _p : {});
+                        const optional = ((_q = profile.optional) !== null && _q !== void 0 ? _q : {});
+                        const custom = ((_r = profile.custom) !== null && _r !== void 0 ? _r : {});
+                        const customFieldsRaw = ((_s = custom.customFields) !== null && _s !== void 0 ? _s : '');
                         let customFields = {};
                         if (customFieldsRaw) {
                             try {
@@ -3258,7 +3330,7 @@ class SmartSchool {
                         coaccount,
                         copyToLVS,
                     };
-                    const attachmentValues = ((_q = attachmentCollection.attachment) !== null && _q !== void 0 ? _q : []);
+                    const attachmentValues = ((_t = attachmentCollection.attachment) !== null && _t !== void 0 ? _t : []);
                     const cleanedAttachments = attachmentValues.filter((entry) => (entry === null || entry === void 0 ? void 0 : entry.filename) && (entry === null || entry === void 0 ? void 0 : entry.filedata));
                     if (cleanedAttachments.length) {
                         payload.attachments = JSON.stringify(cleanedAttachments);

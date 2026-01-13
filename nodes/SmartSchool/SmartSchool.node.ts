@@ -84,6 +84,9 @@ type SupportedOperation =
 	| 'generateSession'
 	| 'validateSession'
 	| 'fetchPlanner'
+	| 'getPlannerElements'
+	| 'getPlannerCalendarsAccessible'
+	| 'getPlannerCalendarsReadable'
 	| 'fetchEmailInbox'
 	| 'fetchEmail'
 	| 'fetchResults'
@@ -466,6 +469,24 @@ export class SmartSchool implements INodeType {
 						value: 'fetchPlanner',
 						description: 'Fetch planner items for a date range',
 						action: 'Fetch planner',
+					},
+					{
+						name: 'Get Planner Elements',
+						value: 'getPlannerElements',
+						description: 'Fetch planner elements for a date range (raw)',
+						action: 'Get planner elements',
+					},
+					{
+						name: 'Get Planner Calendars (Accessible)',
+						value: 'getPlannerCalendarsAccessible',
+						description: 'Fetch accessible platform calendars',
+						action: 'Get planner calendars accessible',
+					},
+					{
+						name: 'Get Planner Calendars (Readable)',
+						value: 'getPlannerCalendarsReadable',
+						description: 'Fetch readable platform calendars',
+						action: 'Get planner calendars readable',
 					},
 					{
 						name: 'Fetch Email Inbox',
@@ -1732,6 +1753,9 @@ export class SmartSchool implements INodeType {
 						operation: [
 							'validateSession',
 							'fetchPlanner',
+							'getPlannerElements',
+							'getPlannerCalendarsAccessible',
+							'getPlannerCalendarsReadable',
 							'fetchEmailInbox',
 							'fetchEmail',
 							'fetchResults',
@@ -1805,7 +1829,7 @@ export class SmartSchool implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['portal'],
-						operation: ['fetchPlanner'],
+						operation: ['fetchPlanner', 'getPlannerElements'],
 					},
 				},
 			},
@@ -1819,7 +1843,7 @@ export class SmartSchool implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['portal'],
-						operation: ['fetchPlanner'],
+						operation: ['fetchPlanner', 'getPlannerElements'],
 					},
 				},
 			},
@@ -2442,6 +2466,75 @@ export class SmartSchool implements INodeType {
 						const data = await parsePortalJson(response, 'planner');
 						returnData.push({
 							json: { plannerData: data },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'getPlannerElements') {
+						const phpSessId = this.getNodeParameter('phpSessId', itemIndex) as string;
+						const userIdParam = this.getNodeParameter('userId', itemIndex, '') as string;
+						const inputUserId =
+							(this.getInputData()[itemIndex]?.json?.userId as string | undefined) ?? '';
+						const userId = userIdParam || inputUserId;
+						if (!userId) {
+							throw new NodeOperationError(
+								this.getNode(),
+								'User ID is required for planner elements. Provide it in the node parameters or pass it from Generate Session.',
+								{ itemIndex },
+							);
+						}
+						const fromDate = this.getNodeParameter('fromDate', itemIndex) as string;
+						const toDate = this.getNodeParameter('toDate', itemIndex) as string;
+
+						const plannerUrl = `https://${normalizedDomain}/planner/api/v1/planned-elements/user/${userId}?from=${fromDate}&to=${toDate}`;
+						const response = await safeFetch.call(this, plannerUrl, {
+							headers: {
+								cookie: buildCookieHeader(phpSessId),
+							},
+						});
+
+						const data = await parsePortalJson(response, 'planner elements');
+						returnData.push({
+							json: { plannerElements: data },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'getPlannerCalendarsAccessible') {
+						const phpSessId = this.getNodeParameter('phpSessId', itemIndex) as string;
+						const response = await safeFetch.call(
+							this,
+							`https://${normalizedDomain}/planner/api/v1/calendars/accessible-platform-calendars`,
+							{
+								headers: {
+									cookie: buildCookieHeader(phpSessId),
+								},
+							},
+						);
+						const data = await parsePortalJson(response, 'planner calendars accessible');
+						returnData.push({
+							json: { plannerCalendarsAccessible: data },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'getPlannerCalendarsReadable') {
+						const phpSessId = this.getNodeParameter('phpSessId', itemIndex) as string;
+						const response = await safeFetch.call(
+							this,
+							`https://${normalizedDomain}/planner/api/v1/calendars/readable-platform-calendars`,
+							{
+								headers: {
+									cookie: buildCookieHeader(phpSessId),
+								},
+							},
+						);
+						const data = await parsePortalJson(response, 'planner calendars readable');
+						returnData.push({
+							json: { plannerCalendarsReadable: data },
 							pairedItem: { item: itemIndex },
 						});
 						continue;
