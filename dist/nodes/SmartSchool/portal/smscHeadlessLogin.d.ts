@@ -7,4 +7,5 @@ export declare function smscHeadlessLogin(creds: {
 }): Promise<{
     phpSessId: any;
     userId: string | undefined;
+    cookieHeader: string;
 }>;

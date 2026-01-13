@@ -95,7 +95,9 @@ type SupportedOperation =
 	| 'getGradebookOtherCategoryGradesByGroup'
 	| 'getPresenceConfig'
 	| 'getPresenceClass'
-	| 'getPresenceDayAllClasses';
+	| 'getPresenceDayAllClasses'
+	| 'getPortalCourses'
+	| 'updatePortalCourseScheduleCodes';
 
 export class SmartSchool implements INodeType {
 	description: INodeTypeDescription = {
@@ -482,6 +484,18 @@ export class SmartSchool implements INodeType {
 						value: 'fetchResults',
 						description: 'Fetch latest results for the account',
 						action: 'Fetch results',
+					},
+					{
+						name: 'Get Course List (Portal)',
+						value: 'getPortalCourses',
+						description: 'Fetch course list from the Smartschool portal',
+						action: 'Get course list',
+					},
+					{
+						name: 'Update Course Schedule Codes (Portal)',
+						value: 'updatePortalCourseScheduleCodes',
+						description: 'Replace schedule codes for a portal course',
+						action: 'Update course schedule codes',
 					},
 					{
 						name: 'Get Gradebook Templates',
@@ -1721,6 +1735,39 @@ export class SmartSchool implements INodeType {
 							'fetchEmailInbox',
 							'fetchEmail',
 							'fetchResults',
+							'getPortalCourses',
+							'updatePortalCourseScheduleCodes',
+							'getGradebookTemplates',
+							'getGradebookConfig',
+							'getGradebookPupilTree',
+							'getGradebookCategories',
+							'getGradebookCategoryGradesByPupil',
+							'getGradebookOtherCategoryGradesByGroup',
+							'getPresenceConfig',
+							'getPresenceClass',
+							'getPresenceDayAllClasses',
+						],
+					},
+				},
+			},
+			{
+				displayName: 'Portal Cookies',
+				name: 'portalCookieHeader',
+				type: 'string',
+				default: '',
+				description:
+					'Optional cookie header from Generate Session (use when portal endpoints require more than PHPSESSID)',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: [
+							'validateSession',
+							'fetchPlanner',
+							'fetchEmailInbox',
+							'fetchEmail',
+							'fetchResults',
+							'getPortalCourses',
+							'updatePortalCourseScheduleCodes',
 							'getGradebookTemplates',
 							'getGradebookConfig',
 							'getGradebookPupilTree',
@@ -1853,6 +1900,34 @@ export class SmartSchool implements INodeType {
 					show: {
 						resource: ['portal'],
 						operation: ['fetchResults'],
+					},
+				},
+			},
+			{
+				displayName: 'Course ID',
+				name: 'portalCourseId',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Course ID from Get Course List (Portal)',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: ['updatePortalCourseScheduleCodes'],
+					},
+				},
+			},
+			{
+				displayName: 'Schedule Codes',
+				name: 'portalScheduleCodes',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Comma-separated or JSON array of schedule codes (e.g. ACINFO1, ACINFO2)',
+				displayOptions: {
+					show: {
+						resource: ['portal'],
+						operation: ['updatePortalCourseScheduleCodes'],
 					},
 				},
 			},
@@ -2243,6 +2318,40 @@ export class SmartSchool implements INodeType {
 							);
 						}
 					};
+					const parseScheduleCodes = (value: string) => {
+						const trimmed = value.trim();
+						if (!trimmed) {
+							return [] as string[];
+						}
+						if (trimmed.startsWith('[')) {
+							try {
+								const parsed = JSON.parse(trimmed);
+								if (!Array.isArray(parsed)) {
+									throw new Error('Expected an array of schedule codes');
+								}
+								return parsed.map((entry) => String(entry)).filter((entry) => entry.length > 0);
+							} catch (error) {
+								throw new NodeOperationError(
+									this.getNode(),
+									`Invalid Schedule Codes JSON: ${(error as Error).message}`,
+									{ itemIndex },
+								);
+							}
+						}
+						return trimmed
+							.split(/[\s,]+/)
+							.map((entry) => entry.trim())
+							.filter(Boolean);
+					};
+					const portalCookieHeader = this.getNodeParameter(
+						'portalCookieHeader',
+						itemIndex,
+						'',
+					) as string;
+					const buildCookieHeader = (phpSessId: string) => {
+						const trimmed = portalCookieHeader.trim();
+						return trimmed.length > 0 ? trimmed : `PHPSESSID=${phpSessId}`;
+					};
 					const postGradebook = async (
 						endpoint: string,
 						params: Record<string, string>,
@@ -2258,7 +2367,7 @@ export class SmartSchool implements INodeType {
 								method: 'POST',
 								headers: {
 									'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
-									cookie: `PHPSESSID=${phpSessId}`,
+									cookie: buildCookieHeader(phpSessId),
 								},
 								body,
 							},
@@ -2274,11 +2383,23 @@ export class SmartSchool implements INodeType {
 							birthdate: string;
 							totpSecret?: string;
 						});
+						const userIdRaw = result.userId ? String(result.userId) : '';
+						let userIdNumeric: number | null = null;
+						if (userIdRaw) {
+							const parts = userIdRaw.split('_');
+							const candidate = parts.length >= 2 ? parts[1] : userIdRaw;
+							const parsed = Number(candidate);
+							if (!Number.isNaN(parsed)) {
+								userIdNumeric = parsed;
+							}
+						}
 						returnData.push({
 							json: {
 								success: true,
 								phpSessId: result.phpSessId,
 								userId: result.userId,
+								cookieHeader: result.cookieHeader,
+								userIdNumeric,
 							},
 							pairedItem: { item: itemIndex },
 						});
@@ -2289,7 +2410,7 @@ export class SmartSchool implements INodeType {
 						const phpSessId = this.getNodeParameter('phpSessId', itemIndex) as string;
 						const response = await fetch(`https://${normalizedDomain}`, {
 							headers: {
-								cookie: `PHPSESSID=${phpSessId}`,
+								cookie: buildCookieHeader(phpSessId),
 							},
 						});
 						returnData.push({
@@ -2311,7 +2432,7 @@ export class SmartSchool implements INodeType {
 						const plannerUrl = `https://${normalizedDomain}/planner/api/v1/planned-elements/user/${userId}?from=${fromDate.split('T')[0]}&to=${toDate.split('T')[0]}&types=${types}`;
 						const response = await safeFetch.call(this, plannerUrl, {
 							headers: {
-								cookie: `PHPSESSID=${phpSessId}`,
+								cookie: buildCookieHeader(phpSessId),
 							},
 						});
 
@@ -2329,13 +2450,61 @@ export class SmartSchool implements INodeType {
 						const resultsUrl = `https://${normalizedDomain}/results/api/v1/evaluations/?pageNumber=1&itemsOnPage=${amountOfResults}`;
 						const response = await safeFetch.call(this, resultsUrl, {
 							headers: {
-								cookie: `PHPSESSID=${phpSessId}`,
+								cookie: buildCookieHeader(phpSessId),
 							},
 						});
 
 						const data = await parsePortalJson(response, 'results');
 						returnData.push({
 							json: { resultsData: data },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'getPortalCourses') {
+						const phpSessId = this.getNodeParameter('phpSessId', itemIndex) as string;
+						const coursesUrl = `https://${normalizedDomain}/course-list/api/v1/courses`;
+						const response = await safeFetch.call(this, coursesUrl, {
+							headers: {
+								accept: '*/*',
+								'content-type': 'application/json',
+								cookie: buildCookieHeader(phpSessId),
+							},
+						});
+
+						const data = await parsePortalJson(response, 'course list');
+						returnData.push({
+							json: { courses: data },
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'updatePortalCourseScheduleCodes') {
+						const phpSessId = this.getNodeParameter('phpSessId', itemIndex) as string;
+						const courseId = this.getNodeParameter('portalCourseId', itemIndex) as string;
+						const scheduleCodesRaw = this.getNodeParameter(
+							'portalScheduleCodes',
+							itemIndex,
+						) as string;
+						const scheduleCodes = parseScheduleCodes(scheduleCodesRaw);
+						const updateUrl = `https://${normalizedDomain}/course-list/api/v1/courses/${courseId}/change-schedule-codes`;
+						const response = await safeFetch.call(this, updateUrl, {
+							method: 'POST',
+							headers: {
+								accept: '*/*',
+								'content-type': 'application/json',
+								cookie: buildCookieHeader(phpSessId),
+								origin: `https://${normalizedDomain}`,
+								referer: `https://${normalizedDomain}/`,
+							},
+							body: JSON.stringify({ newScheduleCodes: scheduleCodes }),
+						});
+
+						const data = await parsePortalJson(response, 'course schedule update');
+						returnData.push({
+							json: { course: data },
 							pairedItem: { item: itemIndex },
 						});
 						continue;
@@ -2421,7 +2590,7 @@ export class SmartSchool implements INodeType {
 								headers: {
 									accept: '*/*',
 									'content-type': 'text/plain',
-									cookie: `PHPSESSID=${phpSessId}`,
+									cookie: buildCookieHeader(phpSessId),
 									'x-requested-with': 'XMLHttpRequest',
 								},
 								body: JSON.stringify({ userID: presenceUserId }),
@@ -2443,7 +2612,7 @@ export class SmartSchool implements INodeType {
 									headers: {
 										accept: 'application/json, text/javascript, */*; q=0.01',
 										'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
-										cookie: `PHPSESSID=${phpSessId}`,
+										cookie: buildCookieHeader(phpSessId),
 										'x-requested-with': 'XMLHttpRequest',
 										...presenceTokenHeaders,
 									},
@@ -2473,7 +2642,7 @@ export class SmartSchool implements INodeType {
 									headers: {
 										accept: 'application/json, text/javascript, */*; q=0.01',
 										'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
-										cookie: `PHPSESSID=${phpSessId}`,
+										cookie: buildCookieHeader(phpSessId),
 										'x-requested-with': 'XMLHttpRequest',
 										...presenceTokenHeaders,
 									},
@@ -2606,7 +2775,7 @@ export class SmartSchool implements INodeType {
 								{
 									headers: {
 										'content-type': 'application/x-www-form-urlencoded',
-										cookie: `PHPSESSID=${phpSessId}`,
+										cookie: buildCookieHeader(phpSessId),
 									},
 									body: `command=${encodeURIComponent(commandXml)}`,
 									method: 'POST',

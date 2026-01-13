@@ -11,7 +11,7 @@ export async function safeFetch(
 		if (response.status === 403) {
 			throw new NodeOperationError(
 				this.getNode(),
-				`HTTP error! You are probably using an invalid User ID. Status: ${response.status}`,
+				`HTTP error! Forbidden (Status: ${response.status}). Check permissions, session cookies, or required headers.`,
 			);
 		}
 

@@ -130,9 +130,13 @@ async function smscHeadlessLogin(creds) {
     }
     const cookies = await context.cookies();
     let phpSess = {};
+    const cookieParts = [];
     cookies.forEach((cookie) => {
         if (cookie.name === 'PHPSESSID' && cookie.domain === normalizedDomain) {
             phpSess = cookie;
+        }
+        if (cookie.domain === normalizedDomain || cookie.domain === `.${normalizedDomain}`) {
+            cookieParts.push(`${cookie.name}=${cookie.value}`);
         }
     });
     const url = await page.locator('#datePickerMenu').first().getAttribute('plannerurl');
@@ -144,6 +148,7 @@ async function smscHeadlessLogin(creds) {
     return {
         phpSessId: phpSess.value,
         userId,
+        cookieHeader: cookieParts.join('; '),
     };
 }
 //# sourceMappingURL=smscHeadlessLogin.js.map

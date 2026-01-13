@@ -6,7 +6,7 @@ async function safeFetch(url, options) {
     try {
         const response = await fetch(url, options);
         if (response.status === 403) {
-            throw new n8n_workflow_1.NodeOperationError(this.getNode(), `HTTP error! You are probably using an invalid User ID. Status: ${response.status}`);
+            throw new n8n_workflow_1.NodeOperationError(this.getNode(), `HTTP error! Forbidden (Status: ${response.status}). Check permissions, session cookies, or required headers.`);
         }
         if (response.status >= 500) {
             let responseText = '';

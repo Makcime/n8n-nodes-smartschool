@@ -396,6 +396,18 @@ class SmartSchool {
                             action: 'Fetch results',
                         },
                         {
+                            name: 'Get Course List (Portal)',
+                            value: 'getPortalCourses',
+                            description: 'Fetch course list from the Smartschool portal',
+                            action: 'Get course list',
+                        },
+                        {
+                            name: 'Update Course Schedule Codes (Portal)',
+                            value: 'updatePortalCourseScheduleCodes',
+                            description: 'Replace schedule codes for a portal course',
+                            action: 'Update course schedule codes',
+                        },
+                        {
                             name: 'Get Gradebook Templates',
                             value: 'getGradebookTemplates',
                             description: 'Fetch Skore gradebook templates',
@@ -1630,6 +1642,38 @@ class SmartSchool {
                                 'fetchEmailInbox',
                                 'fetchEmail',
                                 'fetchResults',
+                                'getPortalCourses',
+                                'updatePortalCourseScheduleCodes',
+                                'getGradebookTemplates',
+                                'getGradebookConfig',
+                                'getGradebookPupilTree',
+                                'getGradebookCategories',
+                                'getGradebookCategoryGradesByPupil',
+                                'getGradebookOtherCategoryGradesByGroup',
+                                'getPresenceConfig',
+                                'getPresenceClass',
+                                'getPresenceDayAllClasses',
+                            ],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Portal Cookies',
+                    name: 'portalCookieHeader',
+                    type: 'string',
+                    default: '',
+                    description: 'Optional cookie header from Generate Session (use when portal endpoints require more than PHPSESSID)',
+                    displayOptions: {
+                        show: {
+                            resource: ['portal'],
+                            operation: [
+                                'validateSession',
+                                'fetchPlanner',
+                                'fetchEmailInbox',
+                                'fetchEmail',
+                                'fetchResults',
+                                'getPortalCourses',
+                                'updatePortalCourseScheduleCodes',
                                 'getGradebookTemplates',
                                 'getGradebookConfig',
                                 'getGradebookPupilTree',
@@ -1762,6 +1806,34 @@ class SmartSchool {
                         show: {
                             resource: ['portal'],
                             operation: ['fetchResults'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Course ID',
+                    name: 'portalCourseId',
+                    type: 'string',
+                    default: '',
+                    required: true,
+                    description: 'Course ID from Get Course List (Portal)',
+                    displayOptions: {
+                        show: {
+                            resource: ['portal'],
+                            operation: ['updatePortalCourseScheduleCodes'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Schedule Codes',
+                    name: 'portalScheduleCodes',
+                    type: 'string',
+                    default: '',
+                    required: true,
+                    description: 'Comma-separated or JSON array of schedule codes (e.g. ACINFO1, ACINFO2)',
+                    displayOptions: {
+                        show: {
+                            resource: ['portal'],
+                            operation: ['updatePortalCourseScheduleCodes'],
                         },
                     },
                 },
@@ -2132,6 +2204,33 @@ class SmartSchool {
                             throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Invalid JSON for ${label}: ${error.message}`, { itemIndex });
                         }
                     };
+                    const parseScheduleCodes = (value) => {
+                        const trimmed = value.trim();
+                        if (!trimmed) {
+                            return [];
+                        }
+                        if (trimmed.startsWith('[')) {
+                            try {
+                                const parsed = JSON.parse(trimmed);
+                                if (!Array.isArray(parsed)) {
+                                    throw new Error('Expected an array of schedule codes');
+                                }
+                                return parsed.map((entry) => String(entry)).filter((entry) => entry.length > 0);
+                            }
+                            catch (error) {
+                                throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Invalid Schedule Codes JSON: ${error.message}`, { itemIndex });
+                            }
+                        }
+                        return trimmed
+                            .split(/[\s,]+/)
+                            .map((entry) => entry.trim())
+                            .filter(Boolean);
+                    };
+                    const portalCookieHeader = this.getNodeParameter('portalCookieHeader', itemIndex, '');
+                    const buildCookieHeader = (phpSessId) => {
+                        const trimmed = portalCookieHeader.trim();
+                        return trimmed.length > 0 ? trimmed : `PHPSESSID=${phpSessId}`;
+                    };
                     const postGradebook = async (endpoint, params, phpSessId) => {
                         const body = Object.entries(params)
                             .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
@@ -2140,7 +2239,7 @@ class SmartSchool {
                             method: 'POST',
                             headers: {
                                 'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                                cookie: `PHPSESSID=${phpSessId}`,
+                                cookie: buildCookieHeader(phpSessId),
                             },
                             body,
                         });
@@ -2148,11 +2247,23 @@ class SmartSchool {
                     };
                     if (operation === 'generateSession') {
                         const result = await (0, smscHeadlessLogin_1.smscHeadlessLogin)(sessionCreds);
+                        const userIdRaw = result.userId ? String(result.userId) : '';
+                        let userIdNumeric = null;
+                        if (userIdRaw) {
+                            const parts = userIdRaw.split('_');
+                            const candidate = parts.length >= 2 ? parts[1] : userIdRaw;
+                            const parsed = Number(candidate);
+                            if (!Number.isNaN(parsed)) {
+                                userIdNumeric = parsed;
+                            }
+                        }
                         returnData.push({
                             json: {
                                 success: true,
                                 phpSessId: result.phpSessId,
                                 userId: result.userId,
+                                cookieHeader: result.cookieHeader,
+                                userIdNumeric,
                             },
                             pairedItem: { item: itemIndex },
                         });
@@ -2162,7 +2273,7 @@ class SmartSchool {
                         const phpSessId = this.getNodeParameter('phpSessId', itemIndex);
                         const response = await fetch(`https://${normalizedDomain}`, {
                             headers: {
-                                cookie: `PHPSESSID=${phpSessId}`,
+                                cookie: buildCookieHeader(phpSessId),
                             },
                         });
                         returnData.push({
@@ -2180,7 +2291,7 @@ class SmartSchool {
                         const plannerUrl = `https://${normalizedDomain}/planner/api/v1/planned-elements/user/${userId}?from=${fromDate.split('T')[0]}&to=${toDate.split('T')[0]}&types=${types}`;
                         const response = await safeFetch_1.safeFetch.call(this, plannerUrl, {
                             headers: {
-                                cookie: `PHPSESSID=${phpSessId}`,
+                                cookie: buildCookieHeader(phpSessId),
                             },
                         });
                         const data = await parsePortalJson(response, 'planner');
@@ -2196,12 +2307,53 @@ class SmartSchool {
                         const resultsUrl = `https://${normalizedDomain}/results/api/v1/evaluations/?pageNumber=1&itemsOnPage=${amountOfResults}`;
                         const response = await safeFetch_1.safeFetch.call(this, resultsUrl, {
                             headers: {
-                                cookie: `PHPSESSID=${phpSessId}`,
+                                cookie: buildCookieHeader(phpSessId),
                             },
                         });
                         const data = await parsePortalJson(response, 'results');
                         returnData.push({
                             json: { resultsData: data },
+                            pairedItem: { item: itemIndex },
+                        });
+                        continue;
+                    }
+                    if (operation === 'getPortalCourses') {
+                        const phpSessId = this.getNodeParameter('phpSessId', itemIndex);
+                        const coursesUrl = `https://${normalizedDomain}/course-list/api/v1/courses`;
+                        const response = await safeFetch_1.safeFetch.call(this, coursesUrl, {
+                            headers: {
+                                accept: '*/*',
+                                'content-type': 'application/json',
+                                cookie: buildCookieHeader(phpSessId),
+                            },
+                        });
+                        const data = await parsePortalJson(response, 'course list');
+                        returnData.push({
+                            json: { courses: data },
+                            pairedItem: { item: itemIndex },
+                        });
+                        continue;
+                    }
+                    if (operation === 'updatePortalCourseScheduleCodes') {
+                        const phpSessId = this.getNodeParameter('phpSessId', itemIndex);
+                        const courseId = this.getNodeParameter('portalCourseId', itemIndex);
+                        const scheduleCodesRaw = this.getNodeParameter('portalScheduleCodes', itemIndex);
+                        const scheduleCodes = parseScheduleCodes(scheduleCodesRaw);
+                        const updateUrl = `https://${normalizedDomain}/course-list/api/v1/courses/${courseId}/change-schedule-codes`;
+                        const response = await safeFetch_1.safeFetch.call(this, updateUrl, {
+                            method: 'POST',
+                            headers: {
+                                accept: '*/*',
+                                'content-type': 'application/json',
+                                cookie: buildCookieHeader(phpSessId),
+                                origin: `https://${normalizedDomain}`,
+                                referer: `https://${normalizedDomain}/`,
+                            },
+                            body: JSON.stringify({ newScheduleCodes: scheduleCodes }),
+                        });
+                        const data = await parsePortalJson(response, 'course schedule update');
+                        returnData.push({
+                            json: { course: data },
                             pairedItem: { item: itemIndex },
                         });
                         continue;
@@ -2273,7 +2425,7 @@ class SmartSchool {
                             headers: {
                                 accept: '*/*',
                                 'content-type': 'text/plain',
-                                cookie: `PHPSESSID=${phpSessId}`,
+                                cookie: buildCookieHeader(phpSessId),
                                 'x-requested-with': 'XMLHttpRequest',
                             },
                             body: JSON.stringify({ userID: presenceUserId }),
@@ -2291,7 +2443,7 @@ class SmartSchool {
                                 headers: {
                                     accept: 'application/json, text/javascript, */*; q=0.01',
                                     'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                                    cookie: `PHPSESSID=${phpSessId}`,
+                                    cookie: buildCookieHeader(phpSessId),
                                     'x-requested-with': 'XMLHttpRequest',
                                     ...presenceTokenHeaders,
                                 },
@@ -2310,7 +2462,7 @@ class SmartSchool {
                                 headers: {
                                     accept: 'application/json, text/javascript, */*; q=0.01',
                                     'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                                    cookie: `PHPSESSID=${phpSessId}`,
+                                    cookie: buildCookieHeader(phpSessId),
                                     'x-requested-with': 'XMLHttpRequest',
                                     ...presenceTokenHeaders,
                                 },
@@ -2423,7 +2575,7 @@ class SmartSchool {
                             const response = await safeFetch_1.safeFetch.call(this, `https://${normalizedDomain}/?module=Messages&file=dispatcher`, {
                                 headers: {
                                     'content-type': 'application/x-www-form-urlencoded',
-                                    cookie: `PHPSESSID=${phpSessId}`,
+                                    cookie: buildCookieHeader(phpSessId),
                                 },
                                 body: `command=${encodeURIComponent(commandXml)}`,
                                 method: 'POST',

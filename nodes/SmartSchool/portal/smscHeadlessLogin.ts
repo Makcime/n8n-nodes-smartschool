@@ -157,10 +157,14 @@ export async function smscHeadlessLogin(creds: {
 
 	const cookies = await context.cookies();
 	let phpSess: any = {};
+	const cookieParts: string[] = [];
 
 	cookies.forEach((cookie) => {
 		if (cookie.name === 'PHPSESSID' && cookie.domain === normalizedDomain) {
 			phpSess = cookie;
+		}
+		if (cookie.domain === normalizedDomain || cookie.domain === `.${normalizedDomain}`) {
+			cookieParts.push(`${cookie.name}=${cookie.value}`);
 		}
 	});
 
@@ -176,5 +180,6 @@ export async function smscHeadlessLogin(creds: {
 	return {
 		phpSessId: phpSess.value,
 		userId,
+		cookieHeader: cookieParts.join('; '),
 	};
 }
