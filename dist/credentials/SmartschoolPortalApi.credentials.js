@@ -3,9 +3,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SmartschoolPortalApi = void 0;
 class SmartschoolPortalApi {
     constructor() {
-        this.name = 'SmartschoolPortalApi';
-        this.displayName = 'Smartschool Portal Login';
+        this.name = 'smartschoolPortalApi';
+        this.displayName = 'Smartschool Portal API';
         this.icon = { light: 'file:../icons/smartschool.logo.svg', dark: 'file:../icons/smartschool.logo.dark.svg' };
+        this.documentationUrl = 'https://schoolsync.gitbook.io/smartschool-kit';
         this.properties = [
             {
                 displayName: 'Smartschool Domain',

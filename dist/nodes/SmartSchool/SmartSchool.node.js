@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SmartSchool = void 0;
-const fast_xml_parser_1 = require("fast-xml-parser");
 const n8n_workflow_1 = require("n8n-workflow");
 const GenericFunctions_1 = require("./GenericFunctions");
 const fields_1 = require("./shared/fields");
@@ -333,40 +332,10 @@ class SmartSchool {
                     },
                     options: [
                         {
-                            name: 'Generate Session',
-                            value: 'generateSession',
-                            description: 'Log in and return PHPSESSID + user ID',
-                            action: 'Generate session',
-                        },
-                        {
-                            name: 'Validate Session',
-                            value: 'validateSession',
-                            description: 'Check whether a PHPSESSID is still valid',
-                            action: 'Validate session',
-                        },
-                        {
-                            name: 'Fetch Planner',
-                            value: 'fetchPlanner',
-                            description: 'Fetch planner items for a date range',
-                            action: 'Fetch planner',
-                        },
-                        {
-                            name: 'Get Planner Elements',
-                            value: 'getPlannerElements',
-                            description: 'Fetch planner elements for a date range (raw)',
-                            action: 'Get planner elements',
-                        },
-                        {
-                            name: 'Get Planner Calendars (Accessible)',
-                            value: 'getPlannerCalendarsAccessible',
-                            description: 'Fetch accessible platform calendars',
-                            action: 'Get planner calendars accessible',
-                        },
-                        {
-                            name: 'Get Planner Calendars (Readable)',
-                            value: 'getPlannerCalendarsReadable',
-                            description: 'Fetch readable platform calendars',
-                            action: 'Get planner calendars readable',
+                            name: 'Fetch Email',
+                            value: 'fetchEmail',
+                            description: 'Fetch a single inbox message by ID',
+                            action: 'Fetch email',
                         },
                         {
                             name: 'Fetch Email Inbox',
@@ -375,10 +344,10 @@ class SmartSchool {
                             action: 'Fetch email inbox',
                         },
                         {
-                            name: 'Fetch Email',
-                            value: 'fetchEmail',
-                            description: 'Fetch a single inbox message by ID',
-                            action: 'Fetch email',
+                            name: 'Fetch Planner',
+                            value: 'fetchPlanner',
+                            description: 'Fetch planner items for a date range',
+                            action: 'Fetch planner',
                         },
                         {
                             name: 'Fetch Results',
@@ -387,22 +356,34 @@ class SmartSchool {
                             action: 'Fetch results',
                         },
                         {
+                            name: 'Generate Session',
+                            value: 'generateSession',
+                            description: 'Automatic login is not supported; supply PHPSESSID manually instead',
+                            action: 'Generate session',
+                        },
+                        {
                             name: 'Get Course List (Portal)',
                             value: 'getPortalCourses',
                             description: 'Fetch course list from the Smartschool portal',
                             action: 'Get course list',
                         },
                         {
-                            name: 'Update Course Schedule Codes (Portal)',
-                            value: 'updatePortalCourseScheduleCodes',
-                            description: 'Replace schedule codes for a portal course',
-                            action: 'Update course schedule codes',
+                            name: 'Get Gradebook Categories',
+                            value: 'getGradebookCategories',
+                            description: 'Fetch gradebook categories for a template',
+                            action: 'Get gradebook categories',
                         },
                         {
-                            name: 'Get Gradebook Templates',
-                            value: 'getGradebookTemplates',
-                            description: 'Fetch Skore gradebook templates',
-                            action: 'Get gradebook templates',
+                            name: 'Get Gradebook Category Grades (Group)',
+                            value: 'getGradebookOtherCategoryGradesByGroup',
+                            description: 'Fetch group grades for a gradebook category',
+                            action: 'Get gradebook category grades by group',
+                        },
+                        {
+                            name: 'Get Gradebook Category Grades (Pupil)',
+                            value: 'getGradebookCategoryGradesByPupil',
+                            description: 'Fetch pupil grades for a gradebook category',
+                            action: 'Get gradebook category grades by pupil',
                         },
                         {
                             name: 'Get Gradebook Config',
@@ -417,28 +398,28 @@ class SmartSchool {
                             action: 'Get gradebook pupil tree',
                         },
                         {
-                            name: 'Get Gradebook Categories',
-                            value: 'getGradebookCategories',
-                            description: 'Fetch gradebook categories for a template',
-                            action: 'Get gradebook categories',
+                            name: 'Get Gradebook Templates',
+                            value: 'getGradebookTemplates',
+                            description: 'Fetch Skore gradebook templates',
+                            action: 'Get gradebook templates',
                         },
                         {
-                            name: 'Get Gradebook Category Grades (Pupil)',
-                            value: 'getGradebookCategoryGradesByPupil',
-                            description: 'Fetch pupil grades for a gradebook category',
-                            action: 'Get gradebook category grades by pupil',
+                            name: 'Get Planner Calendars (Accessible)',
+                            value: 'getPlannerCalendarsAccessible',
+                            description: 'Fetch accessible platform calendars',
+                            action: 'Get planner calendars accessible',
                         },
                         {
-                            name: 'Get Gradebook Category Grades (Group)',
-                            value: 'getGradebookOtherCategoryGradesByGroup',
-                            description: 'Fetch group grades for a gradebook category',
-                            action: 'Get gradebook category grades by group',
+                            name: 'Get Planner Calendars (Readable)',
+                            value: 'getPlannerCalendarsReadable',
+                            description: 'Fetch readable platform calendars',
+                            action: 'Get planner calendars readable',
                         },
                         {
-                            name: 'Get Presence Config',
-                            value: 'getPresenceConfig',
-                            description: 'Fetch allowed classes and hour mappings for presences',
-                            action: 'Get presence config',
+                            name: 'Get Planner Elements',
+                            value: 'getPlannerElements',
+                            description: 'Fetch planner elements for a date range (raw)',
+                            action: 'Get planner elements',
                         },
                         {
                             name: 'Get Presence Class',
@@ -447,10 +428,28 @@ class SmartSchool {
                             action: 'Get presence class',
                         },
                         {
+                            name: 'Get Presence Config',
+                            value: 'getPresenceConfig',
+                            description: 'Fetch allowed classes and hour mappings for presences',
+                            action: 'Get presence config',
+                        },
+                        {
                             name: 'Get Presence Day (All Classes)',
                             value: 'getPresenceDayAllClasses',
                             description: 'Fetch and flatten presence entries for all classes and hours',
                             action: 'Get presence day all classes',
+                        },
+                        {
+                            name: 'Update Course Schedule Codes (Portal)',
+                            value: 'updatePortalCourseScheduleCodes',
+                            description: 'Replace schedule codes for a portal course',
+                            action: 'Update course schedule codes',
+                        },
+                        {
+                            name: 'Validate Session',
+                            value: 'validateSession',
+                            description: 'Check whether a PHPSESSID is still valid',
+                            action: 'Validate session',
                         },
                     ],
                 },
@@ -1788,7 +1787,7 @@ class SmartSchool {
                     ],
                 },
                 {
-                    displayName: 'Amount of Results (latest first)',
+                    displayName: 'Amount of Results (Latest First)',
                     name: 'amountOfResults',
                     type: 'number',
                     default: 9999,
@@ -1903,7 +1902,6 @@ class SmartSchool {
                     name: 'gradebookClass',
                     type: 'string',
                     default: '',
-                    required: false,
                     description: 'Class value for group gradebook requests (leave empty when not needed)',
                     displayOptions: {
                         show: {
@@ -1986,7 +1984,7 @@ class SmartSchool {
                     name: 'presenceOnlyActiveHours',
                     type: 'boolean',
                     default: false,
-                    description: 'Only fetch hours marked active in the presence config',
+                    description: 'Whether to fetch hours marked active in the presence config',
                     displayOptions: {
                         show: {
                             resource: ['portal'],
@@ -1995,7 +1993,7 @@ class SmartSchool {
                     },
                 },
                 {
-                    displayName: 'Class IDs (comma-separated)',
+                    displayName: 'Class IDs (Comma-Separated)',
                     name: 'presenceClassIds',
                     type: 'string',
                     default: '',
@@ -2110,7 +2108,7 @@ class SmartSchool {
         };
     }
     async execute() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4;
         const items = this.getInputData();
         const returnData = [];
         let accesscode = null;
@@ -2174,7 +2172,7 @@ class SmartSchool {
                 const resource = this.getNodeParameter('resource', itemIndex);
                 const operation = this.getNodeParameter('operation', itemIndex);
                 if (resource === 'portal') {
-                    const sessionCreds = await this.getCredentials('SmartschoolPortalApi');
+                    const sessionCreds = await this.getCredentials('smartschoolPortalApi');
                     const normalizedDomain = sessionCreds.domain
                         .replace(/^https?:\/\//, '')
                         .replace(/\/+$/, '');
@@ -2210,11 +2208,14 @@ class SmartSchool {
                             try {
                                 const parsed = JSON.parse(trimmed);
                                 if (!Array.isArray(parsed)) {
-                                    throw new Error('Expected an array of schedule codes');
+                                    throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'Expected an array of schedule codes', { itemIndex });
                                 }
                                 return parsed.map((entry) => String(entry)).filter((entry) => entry.length > 0);
                             }
                             catch (error) {
+                                if (error instanceof n8n_workflow_1.NodeOperationError) {
+                                    throw error;
+                                }
                                 throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Invalid Schedule Codes JSON: ${error.message}`, { itemIndex });
                             }
                         }
@@ -2243,7 +2244,7 @@ class SmartSchool {
                         return await parsePortalJson(response, `gradebook ${endpoint}`);
                     };
                     if (operation === 'generateSession') {
-                        const result = await (0, smscHeadlessLogin_1.smscHeadlessLogin)(sessionCreds);
+                        const result = await smscHeadlessLogin_1.smscHeadlessLogin.call(this, sessionCreds);
                         const userIdRaw = result.userId ? String(result.userId) : '';
                         let userIdNumeric = null;
                         if (userIdRaw) {
@@ -2613,12 +2614,7 @@ class SmartSchool {
                     if (operation === 'fetchEmailInbox' || operation === 'fetchEmail') {
                         const phpSessId = this.getNodeParameter('phpSessId', itemIndex);
                         const mailbox = this.getNodeParameter('mailbox', itemIndex);
-                        const parser = new fast_xml_parser_1.XMLParser({
-                            ignoreAttributes: false,
-                            trimValues: true,
-                            parseTagValue: true,
-                            htmlEntities: true,
-                        });
+                        const toArray = (value) => Array.isArray(value) ? value : value ? [value] : [];
                         const fetchMailWithCommand = async (commandXml) => {
                             const response = await safeFetch_1.safeFetch.call(this, `https://${normalizedDomain}/?module=Messages&file=dispatcher`, {
                                 headers: {
@@ -2629,7 +2625,7 @@ class SmartSchool {
                                 method: 'POST',
                             });
                             const body = await response.text();
-                            return parser.parse(body);
+                            return (0, GenericFunctions_1.parseXmlSimple)(body);
                         };
                         if (operation === 'fetchEmailInbox') {
                             const fetchInboxCommand = `<request>
@@ -2661,10 +2657,16 @@ class SmartSchool {
                             const mails = [];
                             const startMailsJson = await fetchMailWithCommand(fetchInboxCommand);
                             let moreMails = false;
-                            for (const msg of startMailsJson.server.response.actions.action[0].data.messages.message) {
+                            const startActions = toArray(((_m = startMailsJson.server) === null || _m === void 0 ? void 0 : _m.response) &&
+                                startMailsJson.server.response.actions &&
+                                startMailsJson.server.response.actions
+                                    .action);
+                            const startMessages = toArray(((_p = (_o = startActions[0]) === null || _o === void 0 ? void 0 : _o.data) === null || _p === void 0 ? void 0 : _p.messages) &&
+                                ((_q = startActions[0]) === null || _q === void 0 ? void 0 : _q.data).messages.message);
+                            for (const msg of startMessages) {
                                 mails.push(msg);
                             }
-                            for (const msg of startMailsJson.server.response.actions.action) {
+                            for (const msg of startActions) {
                                 if (msg.command === 'continue_messages') {
                                     moreMails = true;
                                 }
@@ -2672,10 +2674,16 @@ class SmartSchool {
                             while (moreMails) {
                                 moreMails = false;
                                 const moreMailsJson = await fetchMailWithCommand(fetchMoreMailsCommand);
-                                for (const msg of moreMailsJson.server.response.actions.action[0].data.messages.message) {
+                                const moreActions = toArray(((_r = moreMailsJson.server) === null || _r === void 0 ? void 0 : _r.response) &&
+                                    moreMailsJson.server.response.actions &&
+                                    moreMailsJson.server.response.actions
+                                        .action);
+                                const moreMessages = toArray(((_t = (_s = moreActions[0]) === null || _s === void 0 ? void 0 : _s.data) === null || _t === void 0 ? void 0 : _t.messages) &&
+                                    ((_u = moreActions[0]) === null || _u === void 0 ? void 0 : _u.data).messages.message);
+                                for (const msg of moreMessages) {
                                     mails.push(msg);
                                 }
-                                for (const msg of moreMailsJson.server.response.actions.action) {
+                                for (const msg of moreActions) {
                                     if (msg.command === 'continue_messages') {
                                         moreMails = true;
                                     }
@@ -2701,9 +2709,13 @@ class SmartSchool {
 					</request>`;
                         const mailJson = await fetchMailWithCommand(fetchMailCommand);
                         let mail = null;
-                        const msg = mailJson.server.response.actions.action.data.message;
+                        const mailActions = toArray(((_v = mailJson.server) === null || _v === void 0 ? void 0 : _v.response) &&
+                            mailJson.server.response.actions &&
+                            mailJson.server.response.actions.action);
+                        const msg = (_x = (_w = mailActions[0]) === null || _w === void 0 ? void 0 : _w.data) === null || _x === void 0 ? void 0 : _x.message;
                         if (msg) {
-                            msg.body = msg.body.replace(/\n/g, '');
+                            const body = msg.body;
+                            msg.body = body ? body.replace(/\n/g, '') : body;
                             mail = msg;
                         }
                         returnData.push({
@@ -2763,8 +2775,8 @@ class SmartSchool {
                     }
                     if (operation === 'saveGroup' || operation === 'saveClass') {
                         const details = this.getNodeParameter('groupClassDetails', itemIndex, {});
-                        const required = ((_m = details.required) !== null && _m !== void 0 ? _m : {});
-                        const optional = ((_o = details.optional) !== null && _o !== void 0 ? _o : {});
+                        const required = ((_y = details.required) !== null && _y !== void 0 ? _y : {});
+                        const optional = ((_z = details.optional) !== null && _z !== void 0 ? _z : {});
                         const payload = {
                             name: required.name,
                             desc: required.desc,
@@ -2951,10 +2963,10 @@ class SmartSchool {
                     }
                     if (operation === 'saveUser') {
                         const profile = this.getNodeParameter('userProfile', itemIndex, {});
-                        const required = ((_p = profile.required) !== null && _p !== void 0 ? _p : {});
-                        const optional = ((_q = profile.optional) !== null && _q !== void 0 ? _q : {});
-                        const custom = ((_r = profile.custom) !== null && _r !== void 0 ? _r : {});
-                        const customFieldsRaw = ((_s = custom.customFields) !== null && _s !== void 0 ? _s : '');
+                        const required = ((_0 = profile.required) !== null && _0 !== void 0 ? _0 : {});
+                        const optional = ((_1 = profile.optional) !== null && _1 !== void 0 ? _1 : {});
+                        const custom = ((_2 = profile.custom) !== null && _2 !== void 0 ? _2 : {});
+                        const customFieldsRaw = ((_3 = custom.customFields) !== null && _3 !== void 0 ? _3 : '');
                         let customFields = {};
                         if (customFieldsRaw) {
                             try {
@@ -3303,7 +3315,7 @@ class SmartSchool {
                         coaccount,
                         copyToLVS,
                     };
-                    const attachmentValues = ((_t = attachmentCollection.attachment) !== null && _t !== void 0 ? _t : []);
+                    const attachmentValues = ((_4 = attachmentCollection.attachment) !== null && _4 !== void 0 ? _4 : []);
                     const cleanedAttachments = attachmentValues.filter((entry) => (entry === null || entry === void 0 ? void 0 : entry.filename) && (entry === null || entry === void 0 ? void 0 : entry.filedata));
                     if (cleanedAttachments.length) {
                         payload.attachments = JSON.stringify(cleanedAttachments);

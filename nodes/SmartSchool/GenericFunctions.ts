@@ -45,7 +45,7 @@ const maybeDecodeBase64 = (value: string) => {
 	}
 };
 
-const parseXmlSimple = (xml: string) => {
+export const parseXmlSimple = (xml: string) => {
 	const cleaned = xml
 		.replace(/<\?xml[\s\S]*?\?>/i, '')
 		.replace(/<!DOCTYPE[\s\S]*?>/i, '')

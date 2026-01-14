@@ -1,3 +1,4 @@
+/* eslint-disable @n8n/community-nodes/resource-operation-pattern */
 import type {
 	IDataObject,
 	IExecuteFunctions,
@@ -5,9 +6,9 @@ import type {
 	INodeType,
 	INodeTypeDescription,
 } from 'n8n-workflow';
-import { XMLParser } from 'fast-xml-parser';
 import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
+import { parseXmlSimple } from './GenericFunctions';
 import { safeFetch } from './portal/safeFetch';
 import { smscHeadlessLogin } from './portal/smscHeadlessLogin';
 
@@ -46,10 +47,12 @@ export class SmartSchoolPortal implements INodeType {
 		subtitle: '={{$parameter.operation}}',
 		inputs: [NodeConnectionTypes.Main],
 		outputs: [NodeConnectionTypes.Main],
+		usableAsTool: true,
 		credentials: [
 			{
-				name: 'SmartschoolPortalApi',
+				name: 'smartschoolPortalApi',
 				required: true,
+				testedBy: 'smartSchoolPortal',
 			},
 		],
 		properties: [
@@ -61,46 +64,10 @@ export class SmartSchoolPortal implements INodeType {
 				default: 'generateSession',
 				options: [
 					{
-						name: 'Generate Session',
-						value: 'generateSession',
-						description: 'Log in and return PHPSESSID + user ID',
-						action: 'Generate session',
-					},
-					{
-						name: 'Validate Session',
-						value: 'validateSession',
-						description: 'Check whether a PHPSESSID is still valid',
-						action: 'Validate session',
-					},
-					{
-						name: 'Fetch Planner',
-						value: 'fetchPlanner',
-						description: 'Fetch planner items for a date range',
-						action: 'Fetch planner',
-					},
-					{
-						name: 'Get Planner Elements',
-						value: 'getPlannerElements',
-						description: 'Fetch planner elements for a date range (raw)',
-						action: 'Get planner elements',
-					},
-					{
-						name: 'Get Planner Calendars (Accessible)',
-						value: 'getPlannerCalendarsAccessible',
-						description: 'Fetch accessible platform calendars',
-						action: 'Get planner calendars accessible',
-					},
-					{
-						name: 'Get Planner Calendars (Readable)',
-						value: 'getPlannerCalendarsReadable',
-						description: 'Fetch readable platform calendars',
-						action: 'Get planner calendars readable',
-					},
-					{
-						name: 'Upload Timetable',
-						value: 'uploadTimetable',
-						description: 'Upload a timetable file and start the import',
-						action: 'Upload timetable',
+						name: 'Fetch Email',
+						value: 'fetchEmail',
+						description: 'Fetch a single inbox message by ID',
+						action: 'Fetch email',
 					},
 					{
 						name: 'Fetch Email Inbox',
@@ -109,10 +76,10 @@ export class SmartSchoolPortal implements INodeType {
 						action: 'Fetch email inbox',
 					},
 					{
-						name: 'Fetch Email',
-						value: 'fetchEmail',
-						description: 'Fetch a single inbox message by ID',
-						action: 'Fetch email',
+						name: 'Fetch Planner',
+						value: 'fetchPlanner',
+						description: 'Fetch planner items for a date range',
+						action: 'Fetch planner',
 					},
 					{
 						name: 'Fetch Results',
@@ -121,22 +88,34 @@ export class SmartSchoolPortal implements INodeType {
 						action: 'Fetch results',
 					},
 					{
+						name: 'Generate Session',
+						value: 'generateSession',
+						description: 'Automatic login is not supported; supply PHPSESSID manually instead',
+						action: 'Generate session',
+					},
+					{
 						name: 'Get Course List',
 						value: 'getPortalCourses',
 						description: 'Fetch course list from the Smartschool portal',
 						action: 'Get course list',
 					},
 					{
-						name: 'Update Course Schedule Codes',
-						value: 'updatePortalCourseScheduleCodes',
-						description: 'Replace schedule codes for a portal course',
-						action: 'Update course schedule codes',
+						name: 'Get Gradebook Categories',
+						value: 'getGradebookCategories',
+						description: 'Fetch gradebook categories for a template',
+						action: 'Get gradebook categories',
 					},
 					{
-						name: 'Get Gradebook Templates',
-						value: 'getGradebookTemplates',
-						description: 'Fetch Skore gradebook templates',
-						action: 'Get gradebook templates',
+						name: 'Get Gradebook Category Grades (Group)',
+						value: 'getGradebookOtherCategoryGradesByGroup',
+						description: 'Fetch group grades for a gradebook category',
+						action: 'Get gradebook category grades by group',
+					},
+					{
+						name: 'Get Gradebook Category Grades (Pupil)',
+						value: 'getGradebookCategoryGradesByPupil',
+						description: 'Fetch pupil grades for a gradebook category',
+						action: 'Get gradebook category grades by pupil',
 					},
 					{
 						name: 'Get Gradebook Config',
@@ -151,28 +130,28 @@ export class SmartSchoolPortal implements INodeType {
 						action: 'Get gradebook pupil tree',
 					},
 					{
-						name: 'Get Gradebook Categories',
-						value: 'getGradebookCategories',
-						description: 'Fetch gradebook categories for a template',
-						action: 'Get gradebook categories',
+						name: 'Get Gradebook Templates',
+						value: 'getGradebookTemplates',
+						description: 'Fetch Skore gradebook templates',
+						action: 'Get gradebook templates',
 					},
 					{
-						name: 'Get Gradebook Category Grades (Pupil)',
-						value: 'getGradebookCategoryGradesByPupil',
-						description: 'Fetch pupil grades for a gradebook category',
-						action: 'Get gradebook category grades by pupil',
+						name: 'Get Planner Calendars (Accessible)',
+						value: 'getPlannerCalendarsAccessible',
+						description: 'Fetch accessible platform calendars',
+						action: 'Get planner calendars accessible',
 					},
 					{
-						name: 'Get Gradebook Category Grades (Group)',
-						value: 'getGradebookOtherCategoryGradesByGroup',
-						description: 'Fetch group grades for a gradebook category',
-						action: 'Get gradebook category grades by group',
+						name: 'Get Planner Calendars (Readable)',
+						value: 'getPlannerCalendarsReadable',
+						description: 'Fetch readable platform calendars',
+						action: 'Get planner calendars readable',
 					},
 					{
-						name: 'Get Presence Config',
-						value: 'getPresenceConfig',
-						description: 'Fetch allowed classes and hour mappings for presences',
-						action: 'Get presence config',
+						name: 'Get Planner Elements',
+						value: 'getPlannerElements',
+						description: 'Fetch planner elements for a date range (raw)',
+						action: 'Get planner elements',
 					},
 					{
 						name: 'Get Presence Class',
@@ -181,10 +160,34 @@ export class SmartSchoolPortal implements INodeType {
 						action: 'Get presence class',
 					},
 					{
+						name: 'Get Presence Config',
+						value: 'getPresenceConfig',
+						description: 'Fetch allowed classes and hour mappings for presences',
+						action: 'Get presence config',
+					},
+					{
 						name: 'Get Presence Day (All Classes)',
 						value: 'getPresenceDayAllClasses',
 						description: 'Fetch and flatten presence entries for all classes and hours',
 						action: 'Get presence day all classes',
+					},
+					{
+						name: 'Update Course Schedule Codes',
+						value: 'updatePortalCourseScheduleCodes',
+						description: 'Replace schedule codes for a portal course',
+						action: 'Update course schedule codes',
+					},
+					{
+						name: 'Upload Timetable',
+						value: 'uploadTimetable',
+						description: 'Upload a timetable file and start the import',
+						action: 'Upload timetable',
+					},
+					{
+						name: 'Validate Session',
+						value: 'validateSession',
+						description: 'Check whether a PHPSESSID is still valid',
+						action: 'Validate session',
 					},
 				],
 			},
@@ -256,16 +259,15 @@ export class SmartSchoolPortal implements INodeType {
 					},
 				},
 			},
-			{
-				displayName: 'User ID',
-				name: 'userId',
-				type: 'string',
-				default: '',
-				required: false,
-				description: 'Smartschool numeric user ID returned by Generate Session',
-				displayOptions: {
-					show: {
-						operation: ['fetchPlanner', 'getPlannerElements'],
+				{
+					displayName: 'User ID',
+					name: 'userId',
+					type: 'string',
+					default: '',
+					description: 'Smartschool numeric user ID returned by Generate Session',
+					displayOptions: {
+						show: {
+							operation: ['fetchPlanner', 'getPlannerElements'],
 					},
 				},
 			},
@@ -360,12 +362,12 @@ export class SmartSchoolPortal implements INodeType {
 					},
 				},
 			},
-			{
-				displayName: 'Classes (comma-separated)',
-				name: 'timetableClasses',
-				type: 'string',
-				default: '',
-				description: 'Optional class IDs to include; leave empty for all classes',
+				{
+					displayName: 'Classes (Comma-Separated)',
+					name: 'timetableClasses',
+					type: 'string',
+					default: '',
+					description: 'Optional class IDs to include; leave empty for all classes',
 				displayOptions: {
 					show: {
 						operation: ['uploadTimetable'],
@@ -384,60 +386,60 @@ export class SmartSchoolPortal implements INodeType {
 					},
 				},
 			},
-			{
-				displayName: 'Types (comma-separated)',
-				name: 'timetableTypes',
-				type: 'string',
-				default: '',
-				description: 'Optional planned element types to include',
+				{
+					displayName: 'Types (Comma-Separated)',
+					name: 'timetableTypes',
+					type: 'string',
+					default: '',
+					description: 'Optional planned element types to include',
 				displayOptions: {
 					show: {
 						operation: ['uploadTimetable'],
 					},
 				},
 			},
-			{
-				displayName: 'Fields (comma-separated)',
-				name: 'timetableFields',
-				type: 'string',
-				default: '',
-				description: 'Optional fields to include during import',
+				{
+					displayName: 'Fields (Comma-Separated)',
+					name: 'timetableFields',
+					type: 'string',
+					default: '',
+					description: 'Optional fields to include during import',
 				displayOptions: {
 					show: {
 						operation: ['uploadTimetable'],
 					},
 				},
 			},
-			{
-				displayName: 'Delete Missing Elements',
-				name: 'timetableDeletePlannedElements',
-				type: 'boolean',
-				default: false,
-				description: 'Delete planned elements that are not present in the uploaded file',
+				{
+					displayName: 'Delete Missing Elements',
+					name: 'timetableDeletePlannedElements',
+					type: 'boolean',
+					default: false,
+					description: 'Whether to delete planned elements that are not present in the uploaded file',
 				displayOptions: {
 					show: {
 						operation: ['uploadTimetable'],
 					},
 				},
 			},
-			{
-				displayName: 'Notify Students',
-				name: 'timetableNotifyStudents',
-				type: 'boolean',
-				default: false,
-				description: 'Send a message to students when their planned elements change',
+				{
+					displayName: 'Notify Students',
+					name: 'timetableNotifyStudents',
+					type: 'boolean',
+					default: false,
+					description: 'Whether to notify students when their planned elements change',
 				displayOptions: {
 					show: {
 						operation: ['uploadTimetable'],
 					},
 				},
 			},
-			{
-				displayName: 'Notify Teachers',
-				name: 'timetableNotifyTeachers',
-				type: 'boolean',
-				default: false,
-				description: 'Send a message to teachers when their planned elements change',
+				{
+					displayName: 'Notify Teachers',
+					name: 'timetableNotifyTeachers',
+					type: 'boolean',
+					default: false,
+					description: 'Whether to notify teachers when their planned elements change',
 				displayOptions: {
 					show: {
 						operation: ['uploadTimetable'],
@@ -479,8 +481,8 @@ export class SmartSchoolPortal implements INodeType {
 					},
 				],
 			},
-			{
-				displayName: 'Amount of Results (latest first)',
+				{
+					displayName: 'Amount of Results (Latest First)',
 				name: 'amountOfResults',
 				type: 'number',
 				default: 9999,
@@ -588,7 +590,6 @@ export class SmartSchoolPortal implements INodeType {
 				name: 'gradebookClass',
 				type: 'string',
 				default: '',
-				required: false,
 				description: 'Class value for group gradebook requests (leave empty when not needed)',
 				displayOptions: {
 					show: {
@@ -660,23 +661,23 @@ export class SmartSchoolPortal implements INodeType {
 					},
 				},
 			},
-			{
-				displayName: 'Only Active Hours',
-				name: 'presenceOnlyActiveHours',
-				type: 'boolean',
-				default: false,
-				description: 'Only fetch hours marked active in the presence config',
+				{
+					displayName: 'Only Active Hours',
+					name: 'presenceOnlyActiveHours',
+					type: 'boolean',
+					default: false,
+					description: 'Whether to fetch hours marked active in the presence config',
 				displayOptions: {
 					show: {
 						operation: ['getPresenceDayAllClasses'],
 					},
 				},
 			},
-			{
-				displayName: 'Class IDs (comma-separated)',
-				name: 'presenceClassIds',
-				type: 'string',
-				default: '',
+				{
+					displayName: 'Class IDs (Comma-Separated)',
+					name: 'presenceClassIds',
+					type: 'string',
+					default: '',
 				description: 'Optional list of class/group IDs to limit the export',
 				displayOptions: {
 					show: {
@@ -693,7 +694,7 @@ export class SmartSchoolPortal implements INodeType {
 
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			const operation = this.getNodeParameter('operation', itemIndex) as PortalOperation;
-			const sessionCreds = await this.getCredentials('SmartschoolPortalApi');
+			const sessionCreds = await this.getCredentials('smartschoolPortalApi');
 			const normalizedDomain = (sessionCreds.domain as string)
 				.replace(/^https?:\/\//, '')
 				.replace(/\/+$/, '');
@@ -724,27 +725,34 @@ export class SmartSchoolPortal implements INodeType {
 					);
 				}
 			};
-			const parseScheduleCodes = (value: unknown) => {
-				if (value === null || value === undefined) {
-					return [] as string[];
-				}
-				const trimmed = String(value).trim();
+				const parseScheduleCodes = (value: unknown) => {
+					if (value === null || value === undefined) {
+						return [] as string[];
+					}
+					const trimmed = String(value).trim();
 				if (!trimmed) {
 					return [] as string[];
 				}
-				if (trimmed.startsWith('[')) {
-					try {
-						const parsed = JSON.parse(trimmed);
-						if (!Array.isArray(parsed)) {
-							throw new Error('Expected an array of schedule codes');
-						}
-						return parsed.map((entry) => String(entry)).filter((entry) => entry.length > 0);
-					} catch (error) {
-						throw new NodeOperationError(
-							this.getNode(),
-							`Invalid Schedule Codes JSON: ${(error as Error).message}`,
-							{ itemIndex },
-						);
+					if (trimmed.startsWith('[')) {
+						try {
+							const parsed = JSON.parse(trimmed);
+							if (!Array.isArray(parsed)) {
+								throw new NodeOperationError(
+									this.getNode(),
+									'Expected an array of schedule codes',
+									{ itemIndex },
+								);
+							}
+							return parsed.map((entry) => String(entry)).filter((entry) => entry.length > 0);
+						} catch (error) {
+							if (error instanceof NodeOperationError) {
+								throw error;
+							}
+							throw new NodeOperationError(
+								this.getNode(),
+								`Invalid Schedule Codes JSON: ${(error as Error).message}`,
+								{ itemIndex },
+							);
 					}
 				}
 				return trimmed
@@ -757,22 +765,25 @@ export class SmartSchoolPortal implements INodeType {
 					.split(/[\s,;]+/)
 					.map((entry) => entry.trim())
 					.filter(Boolean);
-			const parseOptionalJsonObject = (value: string, label: string) => {
-				const trimmed = value.trim();
-				if (!trimmed) {
-					return {};
-				}
-				try {
-					const parsed = JSON.parse(trimmed);
-					if (parsed === null || Array.isArray(parsed) || typeof parsed !== 'object') {
-						throw new Error('Expected a JSON object');
+				const parseOptionalJsonObject = (value: string, label: string) => {
+					const trimmed = value.trim();
+					if (!trimmed) {
+						return {};
 					}
-					return parsed as Record<string, unknown>;
-				} catch (error) {
-					throw new NodeOperationError(
-						this.getNode(),
-						`Invalid JSON for ${label}: ${(error as Error).message}`,
-						{ itemIndex },
+					try {
+						const parsed = JSON.parse(trimmed);
+						if (parsed === null || Array.isArray(parsed) || typeof parsed !== 'object') {
+							throw new NodeOperationError(this.getNode(), 'Expected a JSON object', { itemIndex });
+						}
+						return parsed as Record<string, unknown>;
+					} catch (error) {
+						if (error instanceof NodeOperationError) {
+							throw error;
+						}
+						throw new NodeOperationError(
+							this.getNode(),
+							`Invalid JSON for ${label}: ${(error as Error).message}`,
+							{ itemIndex },
 					);
 				}
 			};
@@ -808,14 +819,14 @@ export class SmartSchoolPortal implements INodeType {
 				return await parsePortalJson(response, `gradebook ${endpoint}`);
 			};
 
-			if (operation === 'generateSession') {
-				const result = await smscHeadlessLogin(sessionCreds as {
-					domain: string;
-					username: string;
-					password: string;
-					birthdate: string;
-					totpSecret?: string;
-				});
+				if (operation === 'generateSession') {
+					const result = await smscHeadlessLogin.call(this, sessionCreds as {
+						domain: string;
+						username: string;
+						password: string;
+						birthdate: string;
+						totpSecret?: string;
+					});
 				const userIdRaw = result.userId ? String(result.userId) : '';
 				let userIdNumeric: number | null = null;
 				if (userIdRaw) {
@@ -1140,15 +1151,15 @@ export class SmartSchoolPortal implements INodeType {
 						body: JSON.stringify({ options, uploadDir }),
 					},
 				);
-				let startBody: IDataObject = {};
-				try {
-					const parsed = await startResponse.json();
-					if (parsed && typeof parsed === 'object') {
-						startBody = parsed as IDataObject;
+					let startBody: IDataObject = {};
+					try {
+						const parsed = await startResponse.json();
+						if (parsed && typeof parsed === 'object') {
+							startBody = parsed as IDataObject;
+						}
+					} catch {
+						startBody = {};
 					}
-				} catch (_) {
-					startBody = {};
-				}
 
 				returnData.push({
 					json: {
@@ -1477,20 +1488,16 @@ export class SmartSchoolPortal implements INodeType {
 				continue;
 			}
 
-			if (operation === 'fetchEmailInbox' || operation === 'fetchEmail') {
-				const phpSessId = this.getNodeParameter('phpSessId', itemIndex) as string;
-				const mailbox = this.getNodeParameter('mailbox', itemIndex) as string;
-				const parser = new XMLParser({
-					ignoreAttributes: false,
-					trimValues: true,
-					parseTagValue: true,
-					htmlEntities: true,
-				});
+				if (operation === 'fetchEmailInbox' || operation === 'fetchEmail') {
+					const phpSessId = this.getNodeParameter('phpSessId', itemIndex) as string;
+					const mailbox = this.getNodeParameter('mailbox', itemIndex) as string;
+					const toArray = <T>(value?: T | T[]): T[] =>
+						Array.isArray(value) ? value : value ? [value] : [];
 
-				const fetchMailWithCommand = async (commandXml: string) => {
-					const response = await safeFetch.call(
-						this,
-						`https://${normalizedDomain}/?module=Messages&file=dispatcher`,
+					const fetchMailWithCommand = async (commandXml: string) => {
+						const response = await safeFetch.call(
+							this,
+							`https://${normalizedDomain}/?module=Messages&file=dispatcher`,
 						{
 							headers: {
 								'content-type': 'application/x-www-form-urlencoded',
@@ -1499,11 +1506,11 @@ export class SmartSchoolPortal implements INodeType {
 							body: `command=${encodeURIComponent(commandXml)}`,
 							method: 'POST',
 						},
-					);
+						);
 
-					const body = await response.text();
-					return parser.parse(body);
-				};
+						const body = await response.text();
+						return parseXmlSimple(body) as IDataObject;
+					};
 
 				if (operation === 'fetchEmailInbox') {
 					const fetchInboxCommand = `<request>
@@ -1537,31 +1544,51 @@ export class SmartSchoolPortal implements INodeType {
 					const mails: IDataObject[] = [];
 					const startMailsJson = await fetchMailWithCommand(fetchInboxCommand);
 
-					let moreMails = false;
-					for (const msg of startMailsJson.server.response.actions.action[0].data.messages.message) {
-						mails.push(msg);
-					}
-
-					for (const msg of startMailsJson.server.response.actions.action) {
-						if (msg.command === 'continue_messages') {
-							moreMails = true;
+						let moreMails = false;
+						const startActions = toArray(
+							(startMailsJson.server as IDataObject)?.response &&
+								((startMailsJson.server as IDataObject).response as IDataObject).actions &&
+								(((startMailsJson.server as IDataObject).response as IDataObject).actions as IDataObject)
+									.action,
+						) as IDataObject[];
+						const startMessages = toArray(
+							(startActions[0]?.data as IDataObject)?.messages &&
+								(((startActions[0]?.data as IDataObject).messages as IDataObject).message as IDataObject),
+						);
+						for (const msg of startMessages) {
+							mails.push(msg as IDataObject);
 						}
-					}
+
+						for (const msg of startActions) {
+							if ((msg.command as string) === 'continue_messages') {
+								moreMails = true;
+							}
+						}
 
 					while (moreMails) {
 						moreMails = false;
 						const moreMailsJson = await fetchMailWithCommand(fetchMoreMailsCommand);
 
-						for (const msg of moreMailsJson.server.response.actions.action[0].data.messages.message) {
-							mails.push(msg);
-						}
+							const moreActions = toArray(
+								(moreMailsJson.server as IDataObject)?.response &&
+									((moreMailsJson.server as IDataObject).response as IDataObject).actions &&
+									(((moreMailsJson.server as IDataObject).response as IDataObject).actions as IDataObject)
+										.action,
+							) as IDataObject[];
+							const moreMessages = toArray(
+								(moreActions[0]?.data as IDataObject)?.messages &&
+									(((moreActions[0]?.data as IDataObject).messages as IDataObject).message as IDataObject),
+							);
+							for (const msg of moreMessages) {
+								mails.push(msg as IDataObject);
+							}
 
-						for (const msg of moreMailsJson.server.response.actions.action) {
-							if (msg.command === 'continue_messages') {
-								moreMails = true;
+							for (const msg of moreActions) {
+								if ((msg.command as string) === 'continue_messages') {
+									moreMails = true;
+								}
 							}
 						}
-					}
 
 					returnData.push({
 						json: { success: true, data: mails },
@@ -1585,11 +1612,17 @@ export class SmartSchoolPortal implements INodeType {
 
 				const mailJson = await fetchMailWithCommand(fetchMailCommand);
 				let mail: IDataObject | null = null;
-				const msg = mailJson.server.response.actions.action.data.message;
-				if (msg) {
-					msg.body = msg.body.replace(/\n/g, '');
-					mail = msg;
-				}
+					const mailActions = toArray(
+						(mailJson.server as IDataObject)?.response &&
+							((mailJson.server as IDataObject).response as IDataObject).actions &&
+							(((mailJson.server as IDataObject).response as IDataObject).actions as IDataObject).action,
+					) as IDataObject[];
+					const msg = (mailActions[0]?.data as IDataObject)?.message as IDataObject | undefined;
+					if (msg) {
+						const body = msg.body as string | undefined;
+						msg.body = body ? body.replace(/\n/g, '') : body;
+						mail = msg;
+					}
 
 				returnData.push({
 					json: { success: true, data: mail },

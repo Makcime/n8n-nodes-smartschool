@@ -1,11 +1,15 @@
-export declare function smscHeadlessLogin(creds: {
+import type { IExecuteFunctions } from 'n8n-workflow';
+type SmartSchoolPortalCredentials = {
     domain: string;
     username: string;
     password: string;
     birthdate: string;
     totpSecret?: string;
-}): Promise<{
-    phpSessId: any;
-    userId: string | undefined;
+};
+type SmartSchoolPortalSession = {
+    phpSessId: string;
+    userId?: string;
     cookieHeader: string;
-}>;
+};
+export declare function smscHeadlessLogin(this: IExecuteFunctions, creds: SmartSchoolPortalCredentials): Promise<SmartSchoolPortalSession>;
+export {};

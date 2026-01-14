@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SmartSchoolPortal = void 0;
-const fast_xml_parser_1 = require("fast-xml-parser");
 const n8n_workflow_1 = require("n8n-workflow");
+const GenericFunctions_1 = require("./GenericFunctions");
 const safeFetch_1 = require("./portal/safeFetch");
 const smscHeadlessLogin_1 = require("./portal/smscHeadlessLogin");
 class SmartSchoolPortal {
@@ -18,10 +18,12 @@ class SmartSchoolPortal {
             subtitle: '={{$parameter.operation}}',
             inputs: [n8n_workflow_1.NodeConnectionTypes.Main],
             outputs: [n8n_workflow_1.NodeConnectionTypes.Main],
+            usableAsTool: true,
             credentials: [
                 {
-                    name: 'SmartschoolPortalApi',
+                    name: 'smartschoolPortalApi',
                     required: true,
+                    testedBy: 'smartSchoolPortal',
                 },
             ],
             properties: [
@@ -33,46 +35,10 @@ class SmartSchoolPortal {
                     default: 'generateSession',
                     options: [
                         {
-                            name: 'Generate Session',
-                            value: 'generateSession',
-                            description: 'Log in and return PHPSESSID + user ID',
-                            action: 'Generate session',
-                        },
-                        {
-                            name: 'Validate Session',
-                            value: 'validateSession',
-                            description: 'Check whether a PHPSESSID is still valid',
-                            action: 'Validate session',
-                        },
-                        {
-                            name: 'Fetch Planner',
-                            value: 'fetchPlanner',
-                            description: 'Fetch planner items for a date range',
-                            action: 'Fetch planner',
-                        },
-                        {
-                            name: 'Get Planner Elements',
-                            value: 'getPlannerElements',
-                            description: 'Fetch planner elements for a date range (raw)',
-                            action: 'Get planner elements',
-                        },
-                        {
-                            name: 'Get Planner Calendars (Accessible)',
-                            value: 'getPlannerCalendarsAccessible',
-                            description: 'Fetch accessible platform calendars',
-                            action: 'Get planner calendars accessible',
-                        },
-                        {
-                            name: 'Get Planner Calendars (Readable)',
-                            value: 'getPlannerCalendarsReadable',
-                            description: 'Fetch readable platform calendars',
-                            action: 'Get planner calendars readable',
-                        },
-                        {
-                            name: 'Upload Timetable',
-                            value: 'uploadTimetable',
-                            description: 'Upload a timetable file and start the import',
-                            action: 'Upload timetable',
+                            name: 'Fetch Email',
+                            value: 'fetchEmail',
+                            description: 'Fetch a single inbox message by ID',
+                            action: 'Fetch email',
                         },
                         {
                             name: 'Fetch Email Inbox',
@@ -81,10 +47,10 @@ class SmartSchoolPortal {
                             action: 'Fetch email inbox',
                         },
                         {
-                            name: 'Fetch Email',
-                            value: 'fetchEmail',
-                            description: 'Fetch a single inbox message by ID',
-                            action: 'Fetch email',
+                            name: 'Fetch Planner',
+                            value: 'fetchPlanner',
+                            description: 'Fetch planner items for a date range',
+                            action: 'Fetch planner',
                         },
                         {
                             name: 'Fetch Results',
@@ -93,22 +59,34 @@ class SmartSchoolPortal {
                             action: 'Fetch results',
                         },
                         {
+                            name: 'Generate Session',
+                            value: 'generateSession',
+                            description: 'Automatic login is not supported; supply PHPSESSID manually instead',
+                            action: 'Generate session',
+                        },
+                        {
                             name: 'Get Course List',
                             value: 'getPortalCourses',
                             description: 'Fetch course list from the Smartschool portal',
                             action: 'Get course list',
                         },
                         {
-                            name: 'Update Course Schedule Codes',
-                            value: 'updatePortalCourseScheduleCodes',
-                            description: 'Replace schedule codes for a portal course',
-                            action: 'Update course schedule codes',
+                            name: 'Get Gradebook Categories',
+                            value: 'getGradebookCategories',
+                            description: 'Fetch gradebook categories for a template',
+                            action: 'Get gradebook categories',
                         },
                         {
-                            name: 'Get Gradebook Templates',
-                            value: 'getGradebookTemplates',
-                            description: 'Fetch Skore gradebook templates',
-                            action: 'Get gradebook templates',
+                            name: 'Get Gradebook Category Grades (Group)',
+                            value: 'getGradebookOtherCategoryGradesByGroup',
+                            description: 'Fetch group grades for a gradebook category',
+                            action: 'Get gradebook category grades by group',
+                        },
+                        {
+                            name: 'Get Gradebook Category Grades (Pupil)',
+                            value: 'getGradebookCategoryGradesByPupil',
+                            description: 'Fetch pupil grades for a gradebook category',
+                            action: 'Get gradebook category grades by pupil',
                         },
                         {
                             name: 'Get Gradebook Config',
@@ -123,28 +101,28 @@ class SmartSchoolPortal {
                             action: 'Get gradebook pupil tree',
                         },
                         {
-                            name: 'Get Gradebook Categories',
-                            value: 'getGradebookCategories',
-                            description: 'Fetch gradebook categories for a template',
-                            action: 'Get gradebook categories',
+                            name: 'Get Gradebook Templates',
+                            value: 'getGradebookTemplates',
+                            description: 'Fetch Skore gradebook templates',
+                            action: 'Get gradebook templates',
                         },
                         {
-                            name: 'Get Gradebook Category Grades (Pupil)',
-                            value: 'getGradebookCategoryGradesByPupil',
-                            description: 'Fetch pupil grades for a gradebook category',
-                            action: 'Get gradebook category grades by pupil',
+                            name: 'Get Planner Calendars (Accessible)',
+                            value: 'getPlannerCalendarsAccessible',
+                            description: 'Fetch accessible platform calendars',
+                            action: 'Get planner calendars accessible',
                         },
                         {
-                            name: 'Get Gradebook Category Grades (Group)',
-                            value: 'getGradebookOtherCategoryGradesByGroup',
-                            description: 'Fetch group grades for a gradebook category',
-                            action: 'Get gradebook category grades by group',
+                            name: 'Get Planner Calendars (Readable)',
+                            value: 'getPlannerCalendarsReadable',
+                            description: 'Fetch readable platform calendars',
+                            action: 'Get planner calendars readable',
                         },
                         {
-                            name: 'Get Presence Config',
-                            value: 'getPresenceConfig',
-                            description: 'Fetch allowed classes and hour mappings for presences',
-                            action: 'Get presence config',
+                            name: 'Get Planner Elements',
+                            value: 'getPlannerElements',
+                            description: 'Fetch planner elements for a date range (raw)',
+                            action: 'Get planner elements',
                         },
                         {
                             name: 'Get Presence Class',
@@ -153,10 +131,34 @@ class SmartSchoolPortal {
                             action: 'Get presence class',
                         },
                         {
+                            name: 'Get Presence Config',
+                            value: 'getPresenceConfig',
+                            description: 'Fetch allowed classes and hour mappings for presences',
+                            action: 'Get presence config',
+                        },
+                        {
                             name: 'Get Presence Day (All Classes)',
                             value: 'getPresenceDayAllClasses',
                             description: 'Fetch and flatten presence entries for all classes and hours',
                             action: 'Get presence day all classes',
+                        },
+                        {
+                            name: 'Update Course Schedule Codes',
+                            value: 'updatePortalCourseScheduleCodes',
+                            description: 'Replace schedule codes for a portal course',
+                            action: 'Update course schedule codes',
+                        },
+                        {
+                            name: 'Upload Timetable',
+                            value: 'uploadTimetable',
+                            description: 'Upload a timetable file and start the import',
+                            action: 'Upload timetable',
+                        },
+                        {
+                            name: 'Validate Session',
+                            value: 'validateSession',
+                            description: 'Check whether a PHPSESSID is still valid',
+                            action: 'Validate session',
                         },
                     ],
                 },
@@ -232,7 +234,6 @@ class SmartSchoolPortal {
                     name: 'userId',
                     type: 'string',
                     default: '',
-                    required: false,
                     description: 'Smartschool numeric user ID returned by Generate Session',
                     displayOptions: {
                         show: {
@@ -332,7 +333,7 @@ class SmartSchoolPortal {
                     },
                 },
                 {
-                    displayName: 'Classes (comma-separated)',
+                    displayName: 'Classes (Comma-Separated)',
                     name: 'timetableClasses',
                     type: 'string',
                     default: '',
@@ -356,7 +357,7 @@ class SmartSchoolPortal {
                     },
                 },
                 {
-                    displayName: 'Types (comma-separated)',
+                    displayName: 'Types (Comma-Separated)',
                     name: 'timetableTypes',
                     type: 'string',
                     default: '',
@@ -368,7 +369,7 @@ class SmartSchoolPortal {
                     },
                 },
                 {
-                    displayName: 'Fields (comma-separated)',
+                    displayName: 'Fields (Comma-Separated)',
                     name: 'timetableFields',
                     type: 'string',
                     default: '',
@@ -384,7 +385,7 @@ class SmartSchoolPortal {
                     name: 'timetableDeletePlannedElements',
                     type: 'boolean',
                     default: false,
-                    description: 'Delete planned elements that are not present in the uploaded file',
+                    description: 'Whether to delete planned elements that are not present in the uploaded file',
                     displayOptions: {
                         show: {
                             operation: ['uploadTimetable'],
@@ -396,7 +397,7 @@ class SmartSchoolPortal {
                     name: 'timetableNotifyStudents',
                     type: 'boolean',
                     default: false,
-                    description: 'Send a message to students when their planned elements change',
+                    description: 'Whether to notify students when their planned elements change',
                     displayOptions: {
                         show: {
                             operation: ['uploadTimetable'],
@@ -408,7 +409,7 @@ class SmartSchoolPortal {
                     name: 'timetableNotifyTeachers',
                     type: 'boolean',
                     default: false,
-                    description: 'Send a message to teachers when their planned elements change',
+                    description: 'Whether to notify teachers when their planned elements change',
                     displayOptions: {
                         show: {
                             operation: ['uploadTimetable'],
@@ -451,7 +452,7 @@ class SmartSchoolPortal {
                     ],
                 },
                 {
-                    displayName: 'Amount of Results (latest first)',
+                    displayName: 'Amount of Results (Latest First)',
                     name: 'amountOfResults',
                     type: 'number',
                     default: 9999,
@@ -559,7 +560,6 @@ class SmartSchoolPortal {
                     name: 'gradebookClass',
                     type: 'string',
                     default: '',
-                    required: false,
                     description: 'Class value for group gradebook requests (leave empty when not needed)',
                     displayOptions: {
                         show: {
@@ -636,7 +636,7 @@ class SmartSchoolPortal {
                     name: 'presenceOnlyActiveHours',
                     type: 'boolean',
                     default: false,
-                    description: 'Only fetch hours marked active in the presence config',
+                    description: 'Whether to fetch hours marked active in the presence config',
                     displayOptions: {
                         show: {
                             operation: ['getPresenceDayAllClasses'],
@@ -644,7 +644,7 @@ class SmartSchoolPortal {
                     },
                 },
                 {
-                    displayName: 'Class IDs (comma-separated)',
+                    displayName: 'Class IDs (Comma-Separated)',
                     name: 'presenceClassIds',
                     type: 'string',
                     default: '',
@@ -659,12 +659,12 @@ class SmartSchoolPortal {
         };
     }
     async execute() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0;
         const items = this.getInputData();
         const returnData = [];
         for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
             const operation = this.getNodeParameter('operation', itemIndex);
-            const sessionCreds = await this.getCredentials('SmartschoolPortalApi');
+            const sessionCreds = await this.getCredentials('smartschoolPortalApi');
             const normalizedDomain = sessionCreds.domain
                 .replace(/^https?:\/\//, '')
                 .replace(/\/+$/, '');
@@ -700,11 +700,14 @@ class SmartSchoolPortal {
                     try {
                         const parsed = JSON.parse(trimmed);
                         if (!Array.isArray(parsed)) {
-                            throw new Error('Expected an array of schedule codes');
+                            throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'Expected an array of schedule codes', { itemIndex });
                         }
                         return parsed.map((entry) => String(entry)).filter((entry) => entry.length > 0);
                     }
                     catch (error) {
+                        if (error instanceof n8n_workflow_1.NodeOperationError) {
+                            throw error;
+                        }
                         throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Invalid Schedule Codes JSON: ${error.message}`, { itemIndex });
                     }
                 }
@@ -725,11 +728,14 @@ class SmartSchoolPortal {
                 try {
                     const parsed = JSON.parse(trimmed);
                     if (parsed === null || Array.isArray(parsed) || typeof parsed !== 'object') {
-                        throw new Error('Expected a JSON object');
+                        throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'Expected a JSON object', { itemIndex });
                     }
                     return parsed;
                 }
                 catch (error) {
+                    if (error instanceof n8n_workflow_1.NodeOperationError) {
+                        throw error;
+                    }
                     throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Invalid JSON for ${label}: ${error.message}`, { itemIndex });
                 }
             };
@@ -753,7 +759,7 @@ class SmartSchoolPortal {
                 return await parsePortalJson(response, `gradebook ${endpoint}`);
             };
             if (operation === 'generateSession') {
-                const result = await (0, smscHeadlessLogin_1.smscHeadlessLogin)(sessionCreds);
+                const result = await smscHeadlessLogin_1.smscHeadlessLogin.call(this, sessionCreds);
                 const userIdRaw = result.userId ? String(result.userId) : '';
                 let userIdNumeric = null;
                 if (userIdRaw) {
@@ -974,7 +980,7 @@ class SmartSchoolPortal {
                         startBody = parsed;
                     }
                 }
-                catch (_) {
+                catch (error) {
                     startBody = {};
                 }
                 returnData.push({
@@ -1253,12 +1259,7 @@ class SmartSchoolPortal {
             if (operation === 'fetchEmailInbox' || operation === 'fetchEmail') {
                 const phpSessId = this.getNodeParameter('phpSessId', itemIndex);
                 const mailbox = this.getNodeParameter('mailbox', itemIndex);
-                const parser = new fast_xml_parser_1.XMLParser({
-                    ignoreAttributes: false,
-                    trimValues: true,
-                    parseTagValue: true,
-                    htmlEntities: true,
-                });
+                const toArray = (value) => Array.isArray(value) ? value : value ? [value] : [];
                 const fetchMailWithCommand = async (commandXml) => {
                     const response = await safeFetch_1.safeFetch.call(this, `https://${normalizedDomain}/?module=Messages&file=dispatcher`, {
                         headers: {
@@ -1269,7 +1270,7 @@ class SmartSchoolPortal {
                         method: 'POST',
                     });
                     const body = await response.text();
-                    return parser.parse(body);
+                    return (0, GenericFunctions_1.parseXmlSimple)(body);
                 };
                 if (operation === 'fetchEmailInbox') {
                     const fetchInboxCommand = `<request>
@@ -1301,10 +1302,16 @@ class SmartSchoolPortal {
                     const mails = [];
                     const startMailsJson = await fetchMailWithCommand(fetchInboxCommand);
                     let moreMails = false;
-                    for (const msg of startMailsJson.server.response.actions.action[0].data.messages.message) {
+                    const startActions = toArray(((_q = startMailsJson.server) === null || _q === void 0 ? void 0 : _q.response) &&
+                        startMailsJson.server.response.actions &&
+                        startMailsJson.server.response.actions
+                            .action);
+                    const startMessages = toArray(((_s = (_r = startActions[0]) === null || _r === void 0 ? void 0 : _r.data) === null || _s === void 0 ? void 0 : _s.messages) &&
+                        ((_t = startActions[0]) === null || _t === void 0 ? void 0 : _t.data).messages.message);
+                    for (const msg of startMessages) {
                         mails.push(msg);
                     }
-                    for (const msg of startMailsJson.server.response.actions.action) {
+                    for (const msg of startActions) {
                         if (msg.command === 'continue_messages') {
                             moreMails = true;
                         }
@@ -1312,10 +1319,16 @@ class SmartSchoolPortal {
                     while (moreMails) {
                         moreMails = false;
                         const moreMailsJson = await fetchMailWithCommand(fetchMoreMailsCommand);
-                        for (const msg of moreMailsJson.server.response.actions.action[0].data.messages.message) {
+                        const moreActions = toArray(((_u = moreMailsJson.server) === null || _u === void 0 ? void 0 : _u.response) &&
+                            moreMailsJson.server.response.actions &&
+                            moreMailsJson.server.response.actions
+                                .action);
+                        const moreMessages = toArray(((_w = (_v = moreActions[0]) === null || _v === void 0 ? void 0 : _v.data) === null || _w === void 0 ? void 0 : _w.messages) &&
+                            ((_x = moreActions[0]) === null || _x === void 0 ? void 0 : _x.data).messages.message);
+                        for (const msg of moreMessages) {
                             mails.push(msg);
                         }
-                        for (const msg of moreMailsJson.server.response.actions.action) {
+                        for (const msg of moreActions) {
                             if (msg.command === 'continue_messages') {
                                 moreMails = true;
                             }
@@ -1341,9 +1354,13 @@ class SmartSchoolPortal {
 			</request>`;
                 const mailJson = await fetchMailWithCommand(fetchMailCommand);
                 let mail = null;
-                const msg = mailJson.server.response.actions.action.data.message;
+                const mailActions = toArray(((_y = mailJson.server) === null || _y === void 0 ? void 0 : _y.response) &&
+                    mailJson.server.response.actions &&
+                    mailJson.server.response.actions.action);
+                const msg = (_0 = (_z = mailActions[0]) === null || _z === void 0 ? void 0 : _z.data) === null || _0 === void 0 ? void 0 : _0.message;
                 if (msg) {
-                    msg.body = msg.body.replace(/\n/g, '');
+                    const body = msg.body;
+                    msg.body = body ? body.replace(/\n/g, '') : body;
                     mail = msg;
                 }
                 returnData.push({

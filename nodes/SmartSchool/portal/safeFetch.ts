@@ -19,7 +19,9 @@ export async function safeFetch(
 			let responseText = '';
 			try {
 				responseText = await response.text();
-			} catch (_) {}
+			} catch {
+				responseText = '';
+			}
 			const snippet = responseText ? ` Response: ${responseText.slice(0, 500)}` : '';
 			throw new NodeOperationError(
 				this.getNode(),

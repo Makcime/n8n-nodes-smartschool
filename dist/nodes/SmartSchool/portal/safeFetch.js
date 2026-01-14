@@ -13,7 +13,9 @@ async function safeFetch(url, options) {
             try {
                 responseText = await response.text();
             }
-            catch (_) { }
+            catch {
+                responseText = '';
+            }
             const snippet = responseText ? ` Response: ${responseText.slice(0, 500)}` : '';
             throw new n8n_workflow_1.NodeOperationError(this.getNode(), `HTTP error! Smartschool server seems to be down or unreachable. Status: ${response.status}.${snippet}`);
         }

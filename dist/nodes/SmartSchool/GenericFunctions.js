@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.plaintextToHtml = void 0;
+exports.plaintextToHtml = exports.parseXmlSimple = void 0;
 exports.getSmartSchoolCredentials = getSmartSchoolCredentials;
 exports.callSmartschoolSoap = callSmartschoolSoap;
 const n8n_workflow_1 = require("n8n-workflow");
@@ -103,6 +103,7 @@ const parseXmlSimple = (xml) => {
     const normalized = normalize(root);
     return (_a = normalized.__root__) !== null && _a !== void 0 ? _a : normalized;
 };
+exports.parseXmlSimple = parseXmlSimple;
 const parseSoapResponse = async (xml) => {
     const faultMatch = xml.match(/<faultstring[^>]*>([\s\S]*?)<\/faultstring>/i);
     if (faultMatch === null || faultMatch === void 0 ? void 0 : faultMatch[1]) {
@@ -135,7 +136,7 @@ const parseSoapResponse = async (xml) => {
         }
     }
     if (normalizedValue.startsWith('<')) {
-        return parseXmlSimple(normalizedValue);
+        return (0, exports.parseXmlSimple)(normalizedValue);
     }
     return normalizedValue;
 };

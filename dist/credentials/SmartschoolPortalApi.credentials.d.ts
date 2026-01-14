@@ -3,5 +3,6 @@ export declare class SmartschoolPortalApi implements ICredentialType {
     name: string;
     displayName: string;
     icon: Icon;
+    documentationUrl: string;
     properties: INodeProperties[];
 }
