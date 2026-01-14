@@ -980,7 +980,7 @@ class SmartSchoolPortal {
                         startBody = parsed;
                     }
                 }
-                catch (error) {
+                catch {
                     startBody = {};
                 }
                 returnData.push({
