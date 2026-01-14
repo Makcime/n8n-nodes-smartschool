@@ -16,7 +16,7 @@ import {
 import { ACCOUNT_STATUS_OPTIONS, VISIBILITY_OPTIONS } from './shared/fields';
 import { SMARTSCHOOL_ERROR_CODES } from './shared/errorCodes';
 import { safeFetch } from './portal/safeFetch';
-import { smscHeadlessLogin } from './portal/smscHeadlessLogin';
+import { smscHeadlessLoginLegacy } from './portal/smscHeadlessLogin';
 
 type SupportedResource =
 	| 'group'
@@ -86,6 +86,7 @@ type SupportedOperation =
 	| 'changeGroupVisibility'
 	| 'getDeliberationLines'
 	| 'generateSession'
+	| 'generateSessionLegacy'
 	| 'validateSession'
 	| 'fetchPlanner'
 	| 'getPlannerElements'
@@ -456,8 +457,14 @@ export class SmartSchool implements INodeType {
 					{
 						name: 'Generate Session',
 						value: 'generateSession',
-						description: 'Automatic login is not supported; supply PHPSESSID manually instead',
+						description: 'Generate a portal session via the external login service',
 						action: 'Generate session',
+					},
+					{
+						name: 'Generate Session (Legacy)',
+						value: 'generateSessionLegacy',
+						description: 'Generate a portal session using Playwright (self-hosted only)',
+						action: 'Generate session legacy',
 					},
 					{
 						name: 'Get Course List (Portal)',
@@ -2386,7 +2393,84 @@ export class SmartSchool implements INodeType {
 					};
 
 					if (operation === 'generateSession') {
-						const result = await smscHeadlessLogin.call(this, sessionCreds as {
+						const loginServiceUrl = (sessionCreds.loginServiceUrl as string) ?? '';
+						const loginServiceApiKey = (sessionCreds.loginServiceApiKey as string) ?? '';
+						if (!loginServiceUrl || !loginServiceApiKey) {
+							throw new NodeOperationError(
+								this.getNode(),
+								'Login service URL and API key are required to generate a portal session.',
+								{ itemIndex },
+							);
+						}
+
+						const loginPayload: IDataObject = {
+							domain: sessionCreds.domain,
+							username: sessionCreds.username,
+							password: sessionCreds.password,
+						};
+						if (sessionCreds.birthdate) {
+							loginPayload.birthdate = sessionCreds.birthdate;
+						}
+						if (sessionCreds.totpSecret) {
+							loginPayload.totpSecret = sessionCreds.totpSecret;
+						}
+
+						let result: IDataObject;
+						try {
+							result = (await this.helpers.httpRequest({
+								method: 'POST',
+								url: loginServiceUrl,
+								headers: {
+									'Content-Type': 'application/json',
+									'X-API-Key': loginServiceApiKey,
+								},
+								body: loginPayload,
+								json: true,
+							})) as IDataObject;
+						} catch (error) {
+							throw new NodeOperationError(
+								this.getNode(),
+								`Login service request failed: ${(error as Error).message}`,
+								{ itemIndex },
+							);
+						}
+
+						const phpSessId = result.phpSessId as string | undefined;
+						const userId = result.userId as string | undefined;
+						const cookieHeader = result.cookieHeader as string | undefined;
+						if (!phpSessId || !cookieHeader) {
+							throw new NodeOperationError(
+								this.getNode(),
+								'Login service did not return phpSessId or cookieHeader.',
+								{ itemIndex },
+							);
+						}
+
+						const userIdRaw = userId ? String(userId) : '';
+						let userIdNumeric: number | null = null;
+						if (userIdRaw) {
+							const parts = userIdRaw.split('_');
+							const candidate = parts.length >= 2 ? parts[1] : userIdRaw;
+							const parsed = Number(candidate);
+							if (!Number.isNaN(parsed)) {
+								userIdNumeric = parsed;
+							}
+						}
+						returnData.push({
+							json: {
+								success: true,
+								phpSessId,
+								userId,
+								cookieHeader,
+								userIdNumeric,
+							},
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					if (operation === 'generateSessionLegacy') {
+						const result = await smscHeadlessLoginLegacy.call(this, sessionCreds as {
 							domain: string;
 							username: string;
 							password: string;
@@ -2460,20 +2544,15 @@ export class SmartSchool implements INodeType {
 						const inputUserId =
 							(this.getInputData()[itemIndex]?.json?.userId as string | undefined) ?? '';
 						const userId = userIdParam || inputUserId;
-						if (!userId) {
-							throw new NodeOperationError(
-								this.getNode(),
-								'User ID is required for planner elements. Provide it in the node parameters or pass it from Generate Session.',
-								{ itemIndex },
-							);
-						}
 						const fromDate = this.getNodeParameter('fromDate', itemIndex) as string;
 						const toDate = this.getNodeParameter('toDate', itemIndex) as string;
 
-						const plannerUrl = `https://${normalizedDomain}/planner/api/v1/planned-elements/user/${userId}?from=${fromDate}&to=${toDate}`;
+						const plannerUrl = userId
+							? `https://${normalizedDomain}/planner/api/v1/planned-elements/user/${userId}?from=${fromDate}&to=${toDate}`
+							: `https://${normalizedDomain}/planner/api/v1/planned-elements?from=${fromDate}&to=${toDate}`;
 						const response = await safeFetch.call(this, plannerUrl, {
 							headers: {
-								cookie: buildCookieHeader(phpSessId),
+								cookie: `PHPSESSID=${phpSessId}`,
 							},
 						});
 

@@ -57,6 +57,8 @@ For **Portal** operations, create a **Smartschool Portal Login** credential with
 
 Presence operations require the portal user ID to fetch a session token, so you will need to provide a `Presence User ID` when calling the presence endpoints.
 
+The legacy Playwright-based session flow was removed from the Portal node UI, but it is still documented in `docs/portal-legacy-session.md`.
+
 These operations rely on Playwright. Install browser dependencies once with:
 
 ```bash
