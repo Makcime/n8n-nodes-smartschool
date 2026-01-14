@@ -34,14 +34,17 @@
 		"n8nNodesApiVersion": 1,
 		"strict": true,
 		"credentials": [
-			"dist/credentials/SmartSchoolApi.credentials.js"
+			"dist/credentials/SmartSchoolApi.credentials.js",
+			"dist/credentials/SmartschoolPortalApi.credentials.js"
 		],
 		"nodes": [
-			"dist/nodes/SmartSchool/SmartSchool.node.js"
+			"dist/nodes/SmartSchool/SmartSchool.node.js",
+			"dist/nodes/SmartSchool/SmartSchoolPortal.node.js"
 		]
 	},
 	"devDependencies": {
 		"@n8n/node-cli": "*",
+		"@types/node": "^20.17.16",
 		"eslint": "9.32.0",
 		"prettier": "3.6.2",
 		"release-it": "^19.0.4",
@@ -49,5 +52,10 @@
 	},
 	"peerDependencies": {
 		"n8n-workflow": "*"
+	},
+	"dependencies": {
+		"fast-xml-parser": "^5.3.0",
+		"otplib": "^12.0.1",
+		"playwright": "^1.56.1"
 	}
 }

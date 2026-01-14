@@ -34,6 +34,7 @@ All functionality is exposed by a single node named **SmartSchool**. It currentl
 | `Absence` | `Get Absents`, `Get Absents with Alias`, `Get Absents by Date`, `Get Absents with Alias by Date`, `Get Absents with Internal Number by Date`, `Get Absents with Username by Date`, `Get Absents by Date and Group` | Pull absence data by student, date, or class/group with optional alias labels. |
 | `Course` | `Get Courses`, `Add Course`, `Add Course Students`, `Add Course Teacher` | List courses or manage course assignments for classes and teachers. |
 | `System` | `Start Skore Sync`, `Check Status`, `Get Student Career`, `Get Deliberation Lines` | Kick off Skore sync jobs, check their status, and read student career history. |
+| `Portal` | `Generate Session`, `Validate Session`, `Fetch Planner`, `Fetch Email Inbox`, `Fetch Email`, `Fetch Results`, `Get Gradebook Templates`, `Get Gradebook Config`, `Get Gradebook Pupil Tree`, `Get Gradebook Categories`, `Get Gradebook Category Grades (Pupil)`, `Get Gradebook Category Grades (Group)`, `Get Presence Config`, `Get Presence Class`, `Get Presence Day (All Classes)` | Uses Smartschool web endpoints via a session cookie to access planner, inbox/sent mail, results, gradebook data, and presences. |
 
 Roadmap work (additional API coverage) is tracked in `docs/SMARTSCHOOL-ROADMAP.md`.
 
@@ -44,7 +45,29 @@ Create a credential of type **SmartSchool API** and provide:
 1. `API Endpoint` – e.g. `https://myschool.smartschool.be/Webservices/V3` (without `?wsdl`).
 2. `Access Code` – the SmartSchool API access code tied to your tenant.
 
-The credential is reused by every resource/operation. If you rotate the access code, update the credential and all workflows keep working.
+The credential is reused by every SOAP resource/operation. If you rotate the access code, update the credential and all workflows keep working.
+
+The SOAP API and the Portal endpoints are separate systems with separate credentials. Use the SOAP credential for SOAP resources, and the Portal credential for Portal operations.
+
+For **Portal** operations, create a **Smartschool Portal Login** credential with:
+
+1. `Smartschool Domain` – e.g. `myschool.smartschool.be` (no `https://`).
+2. `Username`, `Password`, and `Date of Birth` as required.
+3. `TOTP Secret` (optional) for 2FA (base32 seed, no spaces).
+
+Presence operations require the portal user ID to fetch a session token, so you will need to provide a `Presence User ID` when calling the presence endpoints.
+
+These operations rely on Playwright. Install browser dependencies once with:
+
+```bash
+npx playwright install
+```
+
+To debug MFA flows, run n8n with a visible browser:
+
+```bash
+SMARTSCHOOL_HEADLESS=0 n8n start
+```
 
 ## Compatibility
 

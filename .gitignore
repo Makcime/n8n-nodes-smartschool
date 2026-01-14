@@ -104,6 +104,9 @@ dist/**/*.map
 # vitepress cache directory
 **/.vitepress/cache
 
+# Local reverse-engineering notes
+reverse/
+
 # Docusaurus cache and generated files
 .docusaurus
 
