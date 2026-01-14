@@ -4,7 +4,6 @@ exports.SmartSchoolPortal = void 0;
 const n8n_workflow_1 = require("n8n-workflow");
 const GenericFunctions_1 = require("./GenericFunctions");
 const safeFetch_1 = require("./portal/safeFetch");
-const smscHeadlessLogin_1 = require("./portal/smscHeadlessLogin");
 class SmartSchoolPortal {
     constructor() {
         this.description = {
@@ -61,7 +60,7 @@ class SmartSchoolPortal {
                         {
                             name: 'Generate Session',
                             value: 'generateSession',
-                            description: 'Automatic login is not supported; supply PHPSESSID manually instead',
+                            description: 'Generate a portal session via the external login service',
                             action: 'Generate session',
                         },
                         {
@@ -174,7 +173,6 @@ class SmartSchoolPortal {
                             operation: [
                                 'validateSession',
                                 'fetchPlanner',
-                                'getPlannerElements',
                                 'getPlannerCalendarsAccessible',
                                 'getPlannerCalendarsReadable',
                                 'uploadTimetable',
@@ -207,7 +205,6 @@ class SmartSchoolPortal {
                             operation: [
                                 'validateSession',
                                 'fetchPlanner',
-                                'getPlannerElements',
                                 'getPlannerCalendarsAccessible',
                                 'getPlannerCalendarsReadable',
                                 'uploadTimetable',
@@ -237,7 +234,7 @@ class SmartSchoolPortal {
                     description: 'Smartschool numeric user ID returned by Generate Session',
                     displayOptions: {
                         show: {
-                            operation: ['fetchPlanner', 'getPlannerElements'],
+                            operation: ['fetchPlanner'],
                         },
                     },
                 },
@@ -659,7 +656,7 @@ class SmartSchoolPortal {
         };
     }
     async execute() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2;
         const items = this.getInputData();
         const returnData = [];
         for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
@@ -759,8 +756,45 @@ class SmartSchoolPortal {
                 return await parsePortalJson(response, `gradebook ${endpoint}`);
             };
             if (operation === 'generateSession') {
-                const result = await smscHeadlessLogin_1.smscHeadlessLogin.call(this, sessionCreds);
-                const userIdRaw = result.userId ? String(result.userId) : '';
+                const loginServiceUrl = (_a = sessionCreds.loginServiceUrl) !== null && _a !== void 0 ? _a : '';
+                const loginServiceApiKey = (_b = sessionCreds.loginServiceApiKey) !== null && _b !== void 0 ? _b : '';
+                if (!loginServiceUrl || !loginServiceApiKey) {
+                    throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'Login service URL and API key are required to generate a portal session.', { itemIndex });
+                }
+                const loginPayload = {
+                    domain: sessionCreds.domain,
+                    username: sessionCreds.username,
+                    password: sessionCreds.password,
+                };
+                if (sessionCreds.birthdate) {
+                    loginPayload.birthdate = sessionCreds.birthdate;
+                }
+                if (sessionCreds.totpSecret) {
+                    loginPayload.totpSecret = sessionCreds.totpSecret;
+                }
+                let result;
+                try {
+                    result = (await this.helpers.httpRequest({
+                        method: 'POST',
+                        url: loginServiceUrl,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-API-Key': loginServiceApiKey,
+                        },
+                        body: loginPayload,
+                        json: true,
+                    }));
+                }
+                catch (error) {
+                    throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Login service request failed: ${error.message}`, { itemIndex });
+                }
+                const phpSessId = result.phpSessId;
+                const userId = result.userId;
+                const cookieHeader = result.cookieHeader;
+                if (!phpSessId || !cookieHeader) {
+                    throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'Login service did not return phpSessId or cookieHeader.', { itemIndex });
+                }
+                const userIdRaw = userId ? String(userId) : '';
                 let userIdNumeric = null;
                 if (userIdRaw) {
                     const parts = userIdRaw.split('_');
@@ -773,9 +807,9 @@ class SmartSchoolPortal {
                 returnData.push({
                     json: {
                         success: true,
-                        phpSessId: result.phpSessId,
-                        userId: result.userId,
-                        cookieHeader: result.cookieHeader,
+                        phpSessId,
+                        userId,
+                        cookieHeader,
                         userIdNumeric,
                     },
                     pairedItem: { item: itemIndex },
@@ -817,17 +851,16 @@ class SmartSchoolPortal {
             if (operation === 'getPlannerElements') {
                 const phpSessId = this.getNodeParameter('phpSessId', itemIndex);
                 const userIdParam = this.getNodeParameter('userId', itemIndex, '');
-                const inputUserId = (_c = (_b = (_a = this.getInputData()[itemIndex]) === null || _a === void 0 ? void 0 : _a.json) === null || _b === void 0 ? void 0 : _b.userId) !== null && _c !== void 0 ? _c : '';
+                const inputUserId = (_e = (_d = (_c = this.getInputData()[itemIndex]) === null || _c === void 0 ? void 0 : _c.json) === null || _d === void 0 ? void 0 : _d.userId) !== null && _e !== void 0 ? _e : '';
                 const userId = userIdParam || inputUserId;
-                if (!userId) {
-                    throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'User ID is required for planner elements. Provide it in the node parameters or pass it from Generate Session.', { itemIndex });
-                }
                 const fromDate = this.getNodeParameter('fromDate', itemIndex);
                 const toDate = this.getNodeParameter('toDate', itemIndex);
-                const plannerUrl = `https://${normalizedDomain}/planner/api/v1/planned-elements/user/${userId}?from=${fromDate}&to=${toDate}`;
+                const plannerUrl = userId
+                    ? `https://${normalizedDomain}/planner/api/v1/planned-elements/user/${userId}?from=${fromDate}&to=${toDate}`
+                    : `https://${normalizedDomain}/planner/api/v1/planned-elements?from=${fromDate}&to=${toDate}`;
                 const response = await safeFetch_1.safeFetch.call(this, plannerUrl, {
                     headers: {
-                        cookie: buildCookieHeader(phpSessId),
+                        cookie: `PHPSESSID=${phpSessId}`,
                     },
                 });
                 const data = await parsePortalJson(response, 'planner elements');
@@ -868,7 +901,7 @@ class SmartSchoolPortal {
             if (operation === 'uploadTimetable') {
                 const phpSessId = this.getNodeParameter('phpSessId', itemIndex);
                 const binaryProperty = this.getNodeParameter('timetableBinaryProperty', itemIndex);
-                const binary = (_e = (_d = this.getInputData()[itemIndex]) === null || _d === void 0 ? void 0 : _d.binary) === null || _e === void 0 ? void 0 : _e[binaryProperty];
+                const binary = (_g = (_f = this.getInputData()[itemIndex]) === null || _f === void 0 ? void 0 : _f.binary) === null || _g === void 0 ? void 0 : _g[binaryProperty];
                 if (!binary) {
                     throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Binary property "${binaryProperty}" is missing. Attach the timetable file as binary data.`, { itemIndex });
                 }
@@ -951,7 +984,7 @@ class SmartSchoolPortal {
                     body: JSON.stringify({ options, uploadDir }),
                 });
                 const validateData = (await parsePortalJson(validateResponse, 'schedule validate'));
-                const unknownTeachers = ((_f = validateData.unknownTeachers) !== null && _f !== void 0 ? _f : []);
+                const unknownTeachers = ((_h = validateData.unknownTeachers) !== null && _h !== void 0 ? _h : []);
                 if (unknownTeachers.length > 0) {
                     const list = unknownTeachers
                         .map((entry) => entry.value)
@@ -1221,26 +1254,26 @@ class SmartSchoolPortal {
                         const hourId = hourEntry.hourID;
                         const hourTitle = hourEntry.title;
                         const classData = (await fetchPresenceClass(classId, hourId));
-                        const pupils = ((_g = classData.pupils) !== null && _g !== void 0 ? _g : []);
+                        const pupils = ((_j = classData.pupils) !== null && _j !== void 0 ? _j : []);
                         for (const pupil of pupils) {
-                            const presences = ((_h = pupil.presence) !== null && _h !== void 0 ? _h : []);
+                            const presences = ((_k = pupil.presence) !== null && _k !== void 0 ? _k : []);
                             for (const presence of presences) {
-                                const code = ((_j = presence.code) !== null && _j !== void 0 ? _j : {});
+                                const code = ((_l = presence.code) !== null && _l !== void 0 ? _l : {});
                                 rows.push({
                                     classId,
                                     className,
                                     hourId,
                                     hourTitle,
-                                    presenceDate: (_k = presence.presenceDate) !== null && _k !== void 0 ? _k : presenceDateOnly,
-                                    pupilId: (_l = pupil.userID) !== null && _l !== void 0 ? _l : pupil.userId,
+                                    presenceDate: (_m = presence.presenceDate) !== null && _m !== void 0 ? _m : presenceDateOnly,
+                                    pupilId: (_o = pupil.userID) !== null && _o !== void 0 ? _o : pupil.userId,
                                     pupilName: pupil.name,
                                     pupilSurname: pupil.surname,
-                                    pupilFullName: (_m = pupil.nameBIN) !== null && _m !== void 0 ? _m : pupil.name,
+                                    pupilFullName: (_p = pupil.nameBIN) !== null && _p !== void 0 ? _p : pupil.name,
                                     presenceId: presence.presenceID,
-                                    codeId: (_o = presence.codeID) !== null && _o !== void 0 ? _o : code.codeID,
+                                    codeId: (_q = presence.codeID) !== null && _q !== void 0 ? _q : code.codeID,
                                     codeName: code.name,
                                     codeColor: code.color,
-                                    isOfficial: (_p = code.isOfficial) !== null && _p !== void 0 ? _p : presence.isOfficial,
+                                    isOfficial: (_r = code.isOfficial) !== null && _r !== void 0 ? _r : presence.isOfficial,
                                     lastAuthorName: presence.lastAuthorName,
                                     lastAuthorUserIdentifier: presence.lastAuthorUserIdentifier,
                                     encodedAt: presence.date,
@@ -1302,12 +1335,12 @@ class SmartSchoolPortal {
                     const mails = [];
                     const startMailsJson = await fetchMailWithCommand(fetchInboxCommand);
                     let moreMails = false;
-                    const startActions = toArray(((_q = startMailsJson.server) === null || _q === void 0 ? void 0 : _q.response) &&
+                    const startActions = toArray(((_s = startMailsJson.server) === null || _s === void 0 ? void 0 : _s.response) &&
                         startMailsJson.server.response.actions &&
                         startMailsJson.server.response.actions
                             .action);
-                    const startMessages = toArray(((_s = (_r = startActions[0]) === null || _r === void 0 ? void 0 : _r.data) === null || _s === void 0 ? void 0 : _s.messages) &&
-                        ((_t = startActions[0]) === null || _t === void 0 ? void 0 : _t.data).messages.message);
+                    const startMessages = toArray(((_u = (_t = startActions[0]) === null || _t === void 0 ? void 0 : _t.data) === null || _u === void 0 ? void 0 : _u.messages) &&
+                        ((_v = startActions[0]) === null || _v === void 0 ? void 0 : _v.data).messages.message);
                     for (const msg of startMessages) {
                         mails.push(msg);
                     }
@@ -1319,12 +1352,12 @@ class SmartSchoolPortal {
                     while (moreMails) {
                         moreMails = false;
                         const moreMailsJson = await fetchMailWithCommand(fetchMoreMailsCommand);
-                        const moreActions = toArray(((_u = moreMailsJson.server) === null || _u === void 0 ? void 0 : _u.response) &&
+                        const moreActions = toArray(((_w = moreMailsJson.server) === null || _w === void 0 ? void 0 : _w.response) &&
                             moreMailsJson.server.response.actions &&
                             moreMailsJson.server.response.actions
                                 .action);
-                        const moreMessages = toArray(((_w = (_v = moreActions[0]) === null || _v === void 0 ? void 0 : _v.data) === null || _w === void 0 ? void 0 : _w.messages) &&
-                            ((_x = moreActions[0]) === null || _x === void 0 ? void 0 : _x.data).messages.message);
+                        const moreMessages = toArray(((_y = (_x = moreActions[0]) === null || _x === void 0 ? void 0 : _x.data) === null || _y === void 0 ? void 0 : _y.messages) &&
+                            ((_z = moreActions[0]) === null || _z === void 0 ? void 0 : _z.data).messages.message);
                         for (const msg of moreMessages) {
                             mails.push(msg);
                         }
@@ -1354,10 +1387,10 @@ class SmartSchoolPortal {
 			</request>`;
                 const mailJson = await fetchMailWithCommand(fetchMailCommand);
                 let mail = null;
-                const mailActions = toArray(((_y = mailJson.server) === null || _y === void 0 ? void 0 : _y.response) &&
+                const mailActions = toArray(((_0 = mailJson.server) === null || _0 === void 0 ? void 0 : _0.response) &&
                     mailJson.server.response.actions &&
                     mailJson.server.response.actions.action);
-                const msg = (_0 = (_z = mailActions[0]) === null || _z === void 0 ? void 0 : _z.data) === null || _0 === void 0 ? void 0 : _0.message;
+                const msg = (_2 = (_1 = mailActions[0]) === null || _1 === void 0 ? void 0 : _1.data) === null || _2 === void 0 ? void 0 : _2.message;
                 if (msg) {
                     const body = msg.body;
                     msg.body = body ? body.replace(/\n/g, '') : body;

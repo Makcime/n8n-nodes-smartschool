@@ -358,8 +358,14 @@ class SmartSchool {
                         {
                             name: 'Generate Session',
                             value: 'generateSession',
-                            description: 'Automatic login is not supported; supply PHPSESSID manually instead',
+                            description: 'Generate a portal session via the external login service',
                             action: 'Generate session',
+                        },
+                        {
+                            name: 'Generate Session (Legacy)',
+                            value: 'generateSessionLegacy',
+                            description: 'Generate a portal session using Playwright (self-hosted only)',
+                            action: 'Generate session legacy',
                         },
                         {
                             name: 'Get Course List (Portal)',
@@ -2108,7 +2114,7 @@ class SmartSchool {
         };
     }
     async execute() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5, _6;
         const items = this.getInputData();
         const returnData = [];
         let accesscode = null;
@@ -2244,7 +2250,68 @@ class SmartSchool {
                         return await parsePortalJson(response, `gradebook ${endpoint}`);
                     };
                     if (operation === 'generateSession') {
-                        const result = await smscHeadlessLogin_1.smscHeadlessLogin.call(this, sessionCreds);
+                        const loginServiceUrl = (_a = sessionCreds.loginServiceUrl) !== null && _a !== void 0 ? _a : '';
+                        const loginServiceApiKey = (_b = sessionCreds.loginServiceApiKey) !== null && _b !== void 0 ? _b : '';
+                        if (!loginServiceUrl || !loginServiceApiKey) {
+                            throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'Login service URL and API key are required to generate a portal session.', { itemIndex });
+                        }
+                        const loginPayload = {
+                            domain: sessionCreds.domain,
+                            username: sessionCreds.username,
+                            password: sessionCreds.password,
+                        };
+                        if (sessionCreds.birthdate) {
+                            loginPayload.birthdate = sessionCreds.birthdate;
+                        }
+                        if (sessionCreds.totpSecret) {
+                            loginPayload.totpSecret = sessionCreds.totpSecret;
+                        }
+                        let result;
+                        try {
+                            result = (await this.helpers.httpRequest({
+                                method: 'POST',
+                                url: loginServiceUrl,
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-API-Key': loginServiceApiKey,
+                                },
+                                body: loginPayload,
+                                json: true,
+                            }));
+                        }
+                        catch (error) {
+                            throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Login service request failed: ${error.message}`, { itemIndex });
+                        }
+                        const phpSessId = result.phpSessId;
+                        const userId = result.userId;
+                        const cookieHeader = result.cookieHeader;
+                        if (!phpSessId || !cookieHeader) {
+                            throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'Login service did not return phpSessId or cookieHeader.', { itemIndex });
+                        }
+                        const userIdRaw = userId ? String(userId) : '';
+                        let userIdNumeric = null;
+                        if (userIdRaw) {
+                            const parts = userIdRaw.split('_');
+                            const candidate = parts.length >= 2 ? parts[1] : userIdRaw;
+                            const parsed = Number(candidate);
+                            if (!Number.isNaN(parsed)) {
+                                userIdNumeric = parsed;
+                            }
+                        }
+                        returnData.push({
+                            json: {
+                                success: true,
+                                phpSessId,
+                                userId,
+                                cookieHeader,
+                                userIdNumeric,
+                            },
+                            pairedItem: { item: itemIndex },
+                        });
+                        continue;
+                    }
+                    if (operation === 'generateSessionLegacy') {
+                        const result = await smscHeadlessLogin_1.smscHeadlessLoginLegacy.call(this, sessionCreds);
                         const userIdRaw = result.userId ? String(result.userId) : '';
                         let userIdNumeric = null;
                         if (userIdRaw) {
@@ -2302,17 +2369,16 @@ class SmartSchool {
                     if (operation === 'getPlannerElements') {
                         const phpSessId = this.getNodeParameter('phpSessId', itemIndex);
                         const userIdParam = this.getNodeParameter('userId', itemIndex, '');
-                        const inputUserId = (_c = (_b = (_a = this.getInputData()[itemIndex]) === null || _a === void 0 ? void 0 : _a.json) === null || _b === void 0 ? void 0 : _b.userId) !== null && _c !== void 0 ? _c : '';
+                        const inputUserId = (_e = (_d = (_c = this.getInputData()[itemIndex]) === null || _c === void 0 ? void 0 : _c.json) === null || _d === void 0 ? void 0 : _d.userId) !== null && _e !== void 0 ? _e : '';
                         const userId = userIdParam || inputUserId;
-                        if (!userId) {
-                            throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'User ID is required for planner elements. Provide it in the node parameters or pass it from Generate Session.', { itemIndex });
-                        }
                         const fromDate = this.getNodeParameter('fromDate', itemIndex);
                         const toDate = this.getNodeParameter('toDate', itemIndex);
-                        const plannerUrl = `https://${normalizedDomain}/planner/api/v1/planned-elements/user/${userId}?from=${fromDate}&to=${toDate}`;
+                        const plannerUrl = userId
+                            ? `https://${normalizedDomain}/planner/api/v1/planned-elements/user/${userId}?from=${fromDate}&to=${toDate}`
+                            : `https://${normalizedDomain}/planner/api/v1/planned-elements?from=${fromDate}&to=${toDate}`;
                         const response = await safeFetch_1.safeFetch.call(this, plannerUrl, {
                             headers: {
-                                cookie: buildCookieHeader(phpSessId),
+                                cookie: `PHPSESSID=${phpSessId}`,
                             },
                         });
                         const data = await parsePortalJson(response, 'planner elements');
@@ -2576,26 +2642,26 @@ class SmartSchool {
                                 const hourId = hourEntry.hourID;
                                 const hourTitle = hourEntry.title;
                                 const classData = (await fetchPresenceClass(classId, hourId));
-                                const pupils = ((_d = classData.pupils) !== null && _d !== void 0 ? _d : []);
+                                const pupils = ((_f = classData.pupils) !== null && _f !== void 0 ? _f : []);
                                 for (const pupil of pupils) {
-                                    const presences = ((_e = pupil.presence) !== null && _e !== void 0 ? _e : []);
+                                    const presences = ((_g = pupil.presence) !== null && _g !== void 0 ? _g : []);
                                     for (const presence of presences) {
-                                        const code = ((_f = presence.code) !== null && _f !== void 0 ? _f : {});
+                                        const code = ((_h = presence.code) !== null && _h !== void 0 ? _h : {});
                                         rows.push({
                                             classId,
                                             className,
                                             hourId,
                                             hourTitle,
-                                            presenceDate: (_g = presence.presenceDate) !== null && _g !== void 0 ? _g : presenceDateOnly,
-                                            pupilId: (_h = pupil.userID) !== null && _h !== void 0 ? _h : pupil.userId,
+                                            presenceDate: (_j = presence.presenceDate) !== null && _j !== void 0 ? _j : presenceDateOnly,
+                                            pupilId: (_k = pupil.userID) !== null && _k !== void 0 ? _k : pupil.userId,
                                             pupilName: pupil.name,
                                             pupilSurname: pupil.surname,
-                                            pupilFullName: (_j = pupil.nameBIN) !== null && _j !== void 0 ? _j : pupil.name,
+                                            pupilFullName: (_l = pupil.nameBIN) !== null && _l !== void 0 ? _l : pupil.name,
                                             presenceId: presence.presenceID,
-                                            codeId: (_k = presence.codeID) !== null && _k !== void 0 ? _k : code.codeID,
+                                            codeId: (_m = presence.codeID) !== null && _m !== void 0 ? _m : code.codeID,
                                             codeName: code.name,
                                             codeColor: code.color,
-                                            isOfficial: (_l = code.isOfficial) !== null && _l !== void 0 ? _l : presence.isOfficial,
+                                            isOfficial: (_o = code.isOfficial) !== null && _o !== void 0 ? _o : presence.isOfficial,
                                             lastAuthorName: presence.lastAuthorName,
                                             lastAuthorUserIdentifier: presence.lastAuthorUserIdentifier,
                                             encodedAt: presence.date,
@@ -2657,12 +2723,12 @@ class SmartSchool {
                             const mails = [];
                             const startMailsJson = await fetchMailWithCommand(fetchInboxCommand);
                             let moreMails = false;
-                            const startActions = toArray(((_m = startMailsJson.server) === null || _m === void 0 ? void 0 : _m.response) &&
+                            const startActions = toArray(((_p = startMailsJson.server) === null || _p === void 0 ? void 0 : _p.response) &&
                                 startMailsJson.server.response.actions &&
                                 startMailsJson.server.response.actions
                                     .action);
-                            const startMessages = toArray(((_p = (_o = startActions[0]) === null || _o === void 0 ? void 0 : _o.data) === null || _p === void 0 ? void 0 : _p.messages) &&
-                                ((_q = startActions[0]) === null || _q === void 0 ? void 0 : _q.data).messages.message);
+                            const startMessages = toArray(((_r = (_q = startActions[0]) === null || _q === void 0 ? void 0 : _q.data) === null || _r === void 0 ? void 0 : _r.messages) &&
+                                ((_s = startActions[0]) === null || _s === void 0 ? void 0 : _s.data).messages.message);
                             for (const msg of startMessages) {
                                 mails.push(msg);
                             }
@@ -2674,12 +2740,12 @@ class SmartSchool {
                             while (moreMails) {
                                 moreMails = false;
                                 const moreMailsJson = await fetchMailWithCommand(fetchMoreMailsCommand);
-                                const moreActions = toArray(((_r = moreMailsJson.server) === null || _r === void 0 ? void 0 : _r.response) &&
+                                const moreActions = toArray(((_t = moreMailsJson.server) === null || _t === void 0 ? void 0 : _t.response) &&
                                     moreMailsJson.server.response.actions &&
                                     moreMailsJson.server.response.actions
                                         .action);
-                                const moreMessages = toArray(((_t = (_s = moreActions[0]) === null || _s === void 0 ? void 0 : _s.data) === null || _t === void 0 ? void 0 : _t.messages) &&
-                                    ((_u = moreActions[0]) === null || _u === void 0 ? void 0 : _u.data).messages.message);
+                                const moreMessages = toArray(((_v = (_u = moreActions[0]) === null || _u === void 0 ? void 0 : _u.data) === null || _v === void 0 ? void 0 : _v.messages) &&
+                                    ((_w = moreActions[0]) === null || _w === void 0 ? void 0 : _w.data).messages.message);
                                 for (const msg of moreMessages) {
                                     mails.push(msg);
                                 }
@@ -2709,10 +2775,10 @@ class SmartSchool {
 					</request>`;
                         const mailJson = await fetchMailWithCommand(fetchMailCommand);
                         let mail = null;
-                        const mailActions = toArray(((_v = mailJson.server) === null || _v === void 0 ? void 0 : _v.response) &&
+                        const mailActions = toArray(((_x = mailJson.server) === null || _x === void 0 ? void 0 : _x.response) &&
                             mailJson.server.response.actions &&
                             mailJson.server.response.actions.action);
-                        const msg = (_x = (_w = mailActions[0]) === null || _w === void 0 ? void 0 : _w.data) === null || _x === void 0 ? void 0 : _x.message;
+                        const msg = (_z = (_y = mailActions[0]) === null || _y === void 0 ? void 0 : _y.data) === null || _z === void 0 ? void 0 : _z.message;
                         if (msg) {
                             const body = msg.body;
                             msg.body = body ? body.replace(/\n/g, '') : body;
@@ -2775,8 +2841,8 @@ class SmartSchool {
                     }
                     if (operation === 'saveGroup' || operation === 'saveClass') {
                         const details = this.getNodeParameter('groupClassDetails', itemIndex, {});
-                        const required = ((_y = details.required) !== null && _y !== void 0 ? _y : {});
-                        const optional = ((_z = details.optional) !== null && _z !== void 0 ? _z : {});
+                        const required = ((_0 = details.required) !== null && _0 !== void 0 ? _0 : {});
+                        const optional = ((_1 = details.optional) !== null && _1 !== void 0 ? _1 : {});
                         const payload = {
                             name: required.name,
                             desc: required.desc,
@@ -2963,10 +3029,10 @@ class SmartSchool {
                     }
                     if (operation === 'saveUser') {
                         const profile = this.getNodeParameter('userProfile', itemIndex, {});
-                        const required = ((_0 = profile.required) !== null && _0 !== void 0 ? _0 : {});
-                        const optional = ((_1 = profile.optional) !== null && _1 !== void 0 ? _1 : {});
-                        const custom = ((_2 = profile.custom) !== null && _2 !== void 0 ? _2 : {});
-                        const customFieldsRaw = ((_3 = custom.customFields) !== null && _3 !== void 0 ? _3 : '');
+                        const required = ((_2 = profile.required) !== null && _2 !== void 0 ? _2 : {});
+                        const optional = ((_3 = profile.optional) !== null && _3 !== void 0 ? _3 : {});
+                        const custom = ((_4 = profile.custom) !== null && _4 !== void 0 ? _4 : {});
+                        const customFieldsRaw = ((_5 = custom.customFields) !== null && _5 !== void 0 ? _5 : '');
                         let customFields = {};
                         if (customFieldsRaw) {
                             try {
@@ -3315,7 +3381,7 @@ class SmartSchool {
                         coaccount,
                         copyToLVS,
                     };
-                    const attachmentValues = ((_4 = attachmentCollection.attachment) !== null && _4 !== void 0 ? _4 : []);
+                    const attachmentValues = ((_6 = attachmentCollection.attachment) !== null && _6 !== void 0 ? _6 : []);
                     const cleanedAttachments = attachmentValues.filter((entry) => (entry === null || entry === void 0 ? void 0 : entry.filename) && (entry === null || entry === void 0 ? void 0 : entry.filedata));
                     if (cleanedAttachments.length) {
                         payload.attachments = JSON.stringify(cleanedAttachments);

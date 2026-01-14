@@ -11,5 +11,5 @@ type SmartSchoolPortalSession = {
     userId?: string;
     cookieHeader: string;
 };
-export declare function smscHeadlessLogin(this: IExecuteFunctions, creds: SmartSchoolPortalCredentials): Promise<SmartSchoolPortalSession>;
+export declare function smscHeadlessLoginLegacy(this: IExecuteFunctions, creds: SmartSchoolPortalCredentials): Promise<SmartSchoolPortalSession>;
 export {};

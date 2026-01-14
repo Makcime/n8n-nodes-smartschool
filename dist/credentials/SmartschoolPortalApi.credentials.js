@@ -9,6 +9,23 @@ class SmartschoolPortalApi {
         this.documentationUrl = 'https://schoolsync.gitbook.io/smartschool-kit';
         this.properties = [
             {
+                displayName: 'Login Service URL',
+                name: 'loginServiceUrl',
+                type: 'string',
+                default: 'http://localhost:8000/api/v1/portal/login/',
+                description: 'Endpoint that generates Smartschool portal sessions',
+                required: true,
+            },
+            {
+                displayName: 'Login Service API Key',
+                name: 'loginServiceApiKey',
+                type: 'string',
+                typeOptions: { password: true },
+                default: '',
+                description: 'API key for the login service',
+                required: true,
+            },
+            {
                 displayName: 'Smartschool Domain',
                 placeholder: 'school.smartschool.be',
                 name: 'domain',

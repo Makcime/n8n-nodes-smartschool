@@ -1,6 +1,6 @@
 {
     "name": "n8n-nodes-smartschool",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "n8n community node for SmartSchool API",
     "license": "MIT",
     "homepage": "https://github.com/Makcime/n8n-nodes-smartschool",
@@ -53,5 +53,8 @@
     "peerDependencies": {
         "n8n-workflow": "*"
     },
-    "dependencies": {}
+    "dependencies": {
+        "otplib": "^12.0.1",
+        "playwright": "^1.56.1"
+    }
 }
