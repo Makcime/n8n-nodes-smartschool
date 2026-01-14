@@ -18,6 +18,7 @@ type PortalOperation =
 	| 'getPlannerElements'
 	| 'getPlannerCalendarsAccessible'
 	| 'getPlannerCalendarsReadable'
+	| 'uploadTimetable'
 	| 'fetchEmailInbox'
 	| 'fetchEmail'
 	| 'fetchResults'
@@ -94,6 +95,12 @@ export class SmartSchoolPortal implements INodeType {
 						value: 'getPlannerCalendarsReadable',
 						description: 'Fetch readable platform calendars',
 						action: 'Get planner calendars readable',
+					},
+					{
+						name: 'Upload Timetable',
+						value: 'uploadTimetable',
+						description: 'Upload a timetable file and start the import',
+						action: 'Upload timetable',
 					},
 					{
 						name: 'Fetch Email Inbox',
@@ -196,6 +203,7 @@ export class SmartSchoolPortal implements INodeType {
 							'getPlannerElements',
 							'getPlannerCalendarsAccessible',
 							'getPlannerCalendarsReadable',
+							'uploadTimetable',
 							'fetchEmailInbox',
 							'fetchEmail',
 							'fetchResults',
@@ -229,6 +237,7 @@ export class SmartSchoolPortal implements INodeType {
 							'getPlannerElements',
 							'getPlannerCalendarsAccessible',
 							'getPlannerCalendarsReadable',
+							'uploadTimetable',
 							'fetchEmailInbox',
 							'fetchEmail',
 							'fetchResults',
@@ -311,6 +320,129 @@ export class SmartSchoolPortal implements INodeType {
 						value: 'planned-lesson-cluster-assignments',
 					},
 				],
+			},
+			{
+				displayName: 'Timetable File (Binary Property)',
+				name: 'timetableBinaryProperty',
+				type: 'string',
+				default: 'data',
+				required: true,
+				description: 'Binary property that holds the timetable file to upload',
+				displayOptions: {
+					show: {
+						operation: ['uploadTimetable'],
+					},
+				},
+			},
+			{
+				displayName: 'Import From',
+				name: 'timetableFromDate',
+				type: 'dateTime',
+				default: '',
+				required: true,
+				description: 'Start date for the timetable import',
+				displayOptions: {
+					show: {
+						operation: ['uploadTimetable'],
+					},
+				},
+			},
+			{
+				displayName: 'Import To',
+				name: 'timetableToDate',
+				type: 'dateTime',
+				default: '',
+				required: true,
+				description: 'End date for the timetable import',
+				displayOptions: {
+					show: {
+						operation: ['uploadTimetable'],
+					},
+				},
+			},
+			{
+				displayName: 'Classes (comma-separated)',
+				name: 'timetableClasses',
+				type: 'string',
+				default: '',
+				description: 'Optional class IDs to include; leave empty for all classes',
+				displayOptions: {
+					show: {
+						operation: ['uploadTimetable'],
+					},
+				},
+			},
+			{
+				displayName: 'Teachers (JSON)',
+				name: 'timetableTeachers',
+				type: 'string',
+				default: '',
+				description: 'Optional teachers selection JSON; leave empty for all teachers',
+				displayOptions: {
+					show: {
+						operation: ['uploadTimetable'],
+					},
+				},
+			},
+			{
+				displayName: 'Types (comma-separated)',
+				name: 'timetableTypes',
+				type: 'string',
+				default: '',
+				description: 'Optional planned element types to include',
+				displayOptions: {
+					show: {
+						operation: ['uploadTimetable'],
+					},
+				},
+			},
+			{
+				displayName: 'Fields (comma-separated)',
+				name: 'timetableFields',
+				type: 'string',
+				default: '',
+				description: 'Optional fields to include during import',
+				displayOptions: {
+					show: {
+						operation: ['uploadTimetable'],
+					},
+				},
+			},
+			{
+				displayName: 'Delete Missing Elements',
+				name: 'timetableDeletePlannedElements',
+				type: 'boolean',
+				default: false,
+				description: 'Delete planned elements that are not present in the uploaded file',
+				displayOptions: {
+					show: {
+						operation: ['uploadTimetable'],
+					},
+				},
+			},
+			{
+				displayName: 'Notify Students',
+				name: 'timetableNotifyStudents',
+				type: 'boolean',
+				default: false,
+				description: 'Send a message to students when their planned elements change',
+				displayOptions: {
+					show: {
+						operation: ['uploadTimetable'],
+					},
+				},
+			},
+			{
+				displayName: 'Notify Teachers',
+				name: 'timetableNotifyTeachers',
+				type: 'boolean',
+				default: false,
+				description: 'Send a message to teachers when their planned elements change',
+				displayOptions: {
+					show: {
+						operation: ['uploadTimetable'],
+					},
+				},
 			},
 			{
 				displayName: 'Email ID',
@@ -620,6 +752,30 @@ export class SmartSchoolPortal implements INodeType {
 					.map((entry) => entry.trim())
 					.filter(Boolean);
 			};
+			const parseDelimitedList = (value: string) =>
+				value
+					.split(/[\s,;]+/)
+					.map((entry) => entry.trim())
+					.filter(Boolean);
+			const parseOptionalJsonObject = (value: string, label: string) => {
+				const trimmed = value.trim();
+				if (!trimmed) {
+					return {};
+				}
+				try {
+					const parsed = JSON.parse(trimmed);
+					if (parsed === null || Array.isArray(parsed) || typeof parsed !== 'object') {
+						throw new Error('Expected a JSON object');
+					}
+					return parsed as Record<string, unknown>;
+				} catch (error) {
+					throw new NodeOperationError(
+						this.getNode(),
+						`Invalid JSON for ${label}: ${(error as Error).message}`,
+						{ itemIndex },
+					);
+				}
+			};
 			const portalCookieHeader = this.getNodeParameter(
 				'portalCookieHeader',
 				itemIndex,
@@ -785,6 +941,223 @@ export class SmartSchoolPortal implements INodeType {
 				const data = await parsePortalJson(response, 'planner calendars readable');
 				returnData.push({
 					json: { plannerCalendarsReadable: data },
+					pairedItem: { item: itemIndex },
+				});
+				continue;
+			}
+
+			if (operation === 'uploadTimetable') {
+				const phpSessId = this.getNodeParameter('phpSessId', itemIndex) as string;
+				const binaryProperty = this.getNodeParameter(
+					'timetableBinaryProperty',
+					itemIndex,
+				) as string;
+				const binary = this.getInputData()[itemIndex]?.binary?.[binaryProperty];
+				if (!binary) {
+					throw new NodeOperationError(
+						this.getNode(),
+						`Binary property "${binaryProperty}" is missing. Attach the timetable file as binary data.`,
+						{ itemIndex },
+					);
+				}
+
+				const buffer = await this.helpers.getBinaryDataBuffer(itemIndex, binaryProperty);
+				const fileName = binary.fileName || 'timetable.txt';
+				const mimeType = binary.mimeType || 'text/plain';
+
+				const uploadDirResponse = await safeFetch.call(
+					this,
+					`https://${normalizedDomain}/upload/api/v1/get-upload-directory`,
+					{
+						headers: {
+							accept: 'application/json',
+							cookie: buildCookieHeader(phpSessId),
+						},
+					},
+				);
+				const uploadDirData = await parsePortalJson(
+					uploadDirResponse,
+					'get upload directory',
+				);
+				const uploadDir = (uploadDirData as IDataObject).uploadDir as string;
+				if (!uploadDir) {
+					throw new NodeOperationError(
+						this.getNode(),
+						'Upload directory was not returned by Smartschool.',
+						{ itemIndex },
+					);
+				}
+
+				const formData = new FormData();
+				formData.append(
+					'file',
+					new Blob([new Uint8Array(buffer)], { type: mimeType }),
+					fileName,
+				);
+
+				await safeFetch.call(this, `https://${normalizedDomain}/Upload/Upload/Index`, {
+					method: 'POST',
+					headers: {
+						cookie: buildCookieHeader(phpSessId),
+						origin: `https://${normalizedDomain}`,
+						referer: `https://${normalizedDomain}/`,
+						'x-requested-with': 'XMLHttpRequest',
+					},
+					body: formData,
+				});
+
+				const filesResponse = await safeFetch.call(
+					this,
+					`https://${normalizedDomain}/upload/api/v1/files/${uploadDir}`,
+					{
+						headers: {
+							accept: 'application/json',
+							cookie: buildCookieHeader(phpSessId),
+						},
+					},
+				);
+				const filesData = (await parsePortalJson(
+					filesResponse,
+					'uploaded files',
+				)) as IDataObject[];
+
+				const capabilitiesResponse = await safeFetch.call(
+					this,
+					`https://${normalizedDomain}/planner/api/v1/schedule/upload`,
+					{
+						method: 'POST',
+						headers: {
+							accept: 'application/json',
+							'content-type': 'application/json',
+							cookie: buildCookieHeader(phpSessId),
+							origin: `https://${normalizedDomain}`,
+						},
+						body: JSON.stringify({ uploadDir }),
+					},
+				);
+				const capabilitiesData = (await parsePortalJson(
+					capabilitiesResponse,
+					'schedule upload',
+				)) as IDataObject;
+
+				const dateFromRaw = this.getNodeParameter(
+					'timetableFromDate',
+					itemIndex,
+				) as string;
+				const dateToRaw = this.getNodeParameter('timetableToDate', itemIndex) as string;
+				const classesRaw = this.getNodeParameter(
+					'timetableClasses',
+					itemIndex,
+				) as string;
+				const teachersRaw = this.getNodeParameter(
+					'timetableTeachers',
+					itemIndex,
+				) as string;
+				const typesRaw = this.getNodeParameter('timetableTypes', itemIndex) as string;
+				const fieldsRaw = this.getNodeParameter('timetableFields', itemIndex) as string;
+				const deletePlannedElements = this.getNodeParameter(
+					'timetableDeletePlannedElements',
+					itemIndex,
+				) as boolean;
+				const notifyStudents = this.getNodeParameter(
+					'timetableNotifyStudents',
+					itemIndex,
+				) as boolean;
+				const notifyTeachers = this.getNodeParameter(
+					'timetableNotifyTeachers',
+					itemIndex,
+				) as boolean;
+
+				const classes = parseDelimitedList(classesRaw).map((value) =>
+					/^\d+$/.test(value) ? Number(value) : value,
+				);
+				const teachers = parseOptionalJsonObject(teachersRaw, 'Teachers');
+				const types = parseDelimitedList(typesRaw);
+				const fields = parseDelimitedList(fieldsRaw);
+
+				const options = {
+					dateFrom: dateFromRaw.split('T')[0],
+					dateTo: dateToRaw.split('T')[0],
+					classes,
+					teachers,
+					types,
+					fields,
+					sendNotificationStudents: notifyStudents,
+					sendNotificationTeachers: notifyTeachers,
+					deletePlannedElements,
+				};
+
+				const validateResponse = await safeFetch.call(
+					this,
+					`https://${normalizedDomain}/planner/api/v1/schedule/validate`,
+					{
+						method: 'POST',
+						headers: {
+							accept: 'application/json',
+							'content-type': 'application/json',
+							cookie: buildCookieHeader(phpSessId),
+							origin: `https://${normalizedDomain}`,
+						},
+						body: JSON.stringify({ options, uploadDir }),
+					},
+				);
+				const validateData = (await parsePortalJson(
+					validateResponse,
+					'schedule validate',
+				)) as IDataObject;
+				const unknownTeachers = (validateData.unknownTeachers ?? []) as IDataObject[];
+				if (unknownTeachers.length > 0) {
+					const list = unknownTeachers
+						.map((entry) => entry.value)
+						.filter(Boolean)
+						.slice(0, 10)
+						.join(', ');
+					throw new NodeOperationError(
+						this.getNode(),
+						`Timetable validation failed: unknown teachers (${list}).`,
+						{ itemIndex },
+					);
+				}
+				if (validateData.scheduleCouldNotBeValidated) {
+					throw new NodeOperationError(
+						this.getNode(),
+						'Timetable validation failed: schedule could not be validated.',
+						{ itemIndex },
+					);
+				}
+
+				const startResponse = await safeFetch.call(
+					this,
+					`https://${normalizedDomain}/planner/api/v1/schedule/start`,
+					{
+						method: 'POST',
+						headers: {
+							accept: 'application/json',
+							'content-type': 'application/json',
+							cookie: buildCookieHeader(phpSessId),
+							origin: `https://${normalizedDomain}`,
+						},
+						body: JSON.stringify({ options, uploadDir }),
+					},
+				);
+				let startBody: IDataObject = {};
+				try {
+					const parsed = await startResponse.json();
+					if (parsed && typeof parsed === 'object') {
+						startBody = parsed as IDataObject;
+					}
+				} catch (_) {
+					startBody = {};
+				}
+
+				returnData.push({
+					json: {
+						uploadDir,
+						files: filesData,
+						capabilities: capabilitiesData,
+						validation: validateData,
+						start: startBody,
+					},
 					pairedItem: { item: itemIndex },
 				});
 				continue;

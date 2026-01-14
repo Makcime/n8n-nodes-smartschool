@@ -69,6 +69,12 @@ class SmartSchoolPortal {
                             action: 'Get planner calendars readable',
                         },
                         {
+                            name: 'Upload Timetable',
+                            value: 'uploadTimetable',
+                            description: 'Upload a timetable file and start the import',
+                            action: 'Upload timetable',
+                        },
+                        {
                             name: 'Fetch Email Inbox',
                             value: 'fetchEmailInbox',
                             description: 'Fetch inbox messages via SmartSchool web endpoints',
@@ -169,6 +175,7 @@ class SmartSchoolPortal {
                                 'getPlannerElements',
                                 'getPlannerCalendarsAccessible',
                                 'getPlannerCalendarsReadable',
+                                'uploadTimetable',
                                 'fetchEmailInbox',
                                 'fetchEmail',
                                 'fetchResults',
@@ -201,6 +208,7 @@ class SmartSchoolPortal {
                                 'getPlannerElements',
                                 'getPlannerCalendarsAccessible',
                                 'getPlannerCalendarsReadable',
+                                'uploadTimetable',
                                 'fetchEmailInbox',
                                 'fetchEmail',
                                 'fetchResults',
@@ -283,6 +291,129 @@ class SmartSchoolPortal {
                             value: 'planned-lesson-cluster-assignments',
                         },
                     ],
+                },
+                {
+                    displayName: 'Timetable File (Binary Property)',
+                    name: 'timetableBinaryProperty',
+                    type: 'string',
+                    default: 'data',
+                    required: true,
+                    description: 'Binary property that holds the timetable file to upload',
+                    displayOptions: {
+                        show: {
+                            operation: ['uploadTimetable'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Import From',
+                    name: 'timetableFromDate',
+                    type: 'dateTime',
+                    default: '',
+                    required: true,
+                    description: 'Start date for the timetable import',
+                    displayOptions: {
+                        show: {
+                            operation: ['uploadTimetable'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Import To',
+                    name: 'timetableToDate',
+                    type: 'dateTime',
+                    default: '',
+                    required: true,
+                    description: 'End date for the timetable import',
+                    displayOptions: {
+                        show: {
+                            operation: ['uploadTimetable'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Classes (comma-separated)',
+                    name: 'timetableClasses',
+                    type: 'string',
+                    default: '',
+                    description: 'Optional class IDs to include; leave empty for all classes',
+                    displayOptions: {
+                        show: {
+                            operation: ['uploadTimetable'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Teachers (JSON)',
+                    name: 'timetableTeachers',
+                    type: 'string',
+                    default: '',
+                    description: 'Optional teachers selection JSON; leave empty for all teachers',
+                    displayOptions: {
+                        show: {
+                            operation: ['uploadTimetable'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Types (comma-separated)',
+                    name: 'timetableTypes',
+                    type: 'string',
+                    default: '',
+                    description: 'Optional planned element types to include',
+                    displayOptions: {
+                        show: {
+                            operation: ['uploadTimetable'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Fields (comma-separated)',
+                    name: 'timetableFields',
+                    type: 'string',
+                    default: '',
+                    description: 'Optional fields to include during import',
+                    displayOptions: {
+                        show: {
+                            operation: ['uploadTimetable'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Delete Missing Elements',
+                    name: 'timetableDeletePlannedElements',
+                    type: 'boolean',
+                    default: false,
+                    description: 'Delete planned elements that are not present in the uploaded file',
+                    displayOptions: {
+                        show: {
+                            operation: ['uploadTimetable'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Notify Students',
+                    name: 'timetableNotifyStudents',
+                    type: 'boolean',
+                    default: false,
+                    description: 'Send a message to students when their planned elements change',
+                    displayOptions: {
+                        show: {
+                            operation: ['uploadTimetable'],
+                        },
+                    },
+                },
+                {
+                    displayName: 'Notify Teachers',
+                    name: 'timetableNotifyTeachers',
+                    type: 'boolean',
+                    default: false,
+                    description: 'Send a message to teachers when their planned elements change',
+                    displayOptions: {
+                        show: {
+                            operation: ['uploadTimetable'],
+                        },
+                    },
                 },
                 {
                     displayName: 'Email ID',
@@ -528,7 +659,7 @@ class SmartSchoolPortal {
         };
     }
     async execute() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
         const items = this.getInputData();
         const returnData = [];
         for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
@@ -581,6 +712,26 @@ class SmartSchoolPortal {
                     .split(/[\s,;]+/)
                     .map((entry) => entry.trim())
                     .filter(Boolean);
+            };
+            const parseDelimitedList = (value) => value
+                .split(/[\s,;]+/)
+                .map((entry) => entry.trim())
+                .filter(Boolean);
+            const parseOptionalJsonObject = (value, label) => {
+                const trimmed = value.trim();
+                if (!trimmed) {
+                    return {};
+                }
+                try {
+                    const parsed = JSON.parse(trimmed);
+                    if (parsed === null || Array.isArray(parsed) || typeof parsed !== 'object') {
+                        throw new Error('Expected a JSON object');
+                    }
+                    return parsed;
+                }
+                catch (error) {
+                    throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Invalid JSON for ${label}: ${error.message}`, { itemIndex });
+                }
             };
             const portalCookieHeader = this.getNodeParameter('portalCookieHeader', itemIndex, '');
             const buildCookieHeader = (phpSessId) => {
@@ -704,6 +855,136 @@ class SmartSchoolPortal {
                 const data = await parsePortalJson(response, 'planner calendars readable');
                 returnData.push({
                     json: { plannerCalendarsReadable: data },
+                    pairedItem: { item: itemIndex },
+                });
+                continue;
+            }
+            if (operation === 'uploadTimetable') {
+                const phpSessId = this.getNodeParameter('phpSessId', itemIndex);
+                const binaryProperty = this.getNodeParameter('timetableBinaryProperty', itemIndex);
+                const binary = (_e = (_d = this.getInputData()[itemIndex]) === null || _d === void 0 ? void 0 : _d.binary) === null || _e === void 0 ? void 0 : _e[binaryProperty];
+                if (!binary) {
+                    throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Binary property "${binaryProperty}" is missing. Attach the timetable file as binary data.`, { itemIndex });
+                }
+                const buffer = await this.helpers.getBinaryDataBuffer(itemIndex, binaryProperty);
+                const fileName = binary.fileName || 'timetable.txt';
+                const mimeType = binary.mimeType || 'text/plain';
+                const uploadDirResponse = await safeFetch_1.safeFetch.call(this, `https://${normalizedDomain}/upload/api/v1/get-upload-directory`, {
+                    headers: {
+                        accept: 'application/json',
+                        cookie: buildCookieHeader(phpSessId),
+                    },
+                });
+                const uploadDirData = await parsePortalJson(uploadDirResponse, 'get upload directory');
+                const uploadDir = uploadDirData.uploadDir;
+                if (!uploadDir) {
+                    throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'Upload directory was not returned by Smartschool.', { itemIndex });
+                }
+                const formData = new FormData();
+                formData.append('file', new Blob([new Uint8Array(buffer)], { type: mimeType }), fileName);
+                await safeFetch_1.safeFetch.call(this, `https://${normalizedDomain}/Upload/Upload/Index`, {
+                    method: 'POST',
+                    headers: {
+                        cookie: buildCookieHeader(phpSessId),
+                        origin: `https://${normalizedDomain}`,
+                        referer: `https://${normalizedDomain}/`,
+                        'x-requested-with': 'XMLHttpRequest',
+                    },
+                    body: formData,
+                });
+                const filesResponse = await safeFetch_1.safeFetch.call(this, `https://${normalizedDomain}/upload/api/v1/files/${uploadDir}`, {
+                    headers: {
+                        accept: 'application/json',
+                        cookie: buildCookieHeader(phpSessId),
+                    },
+                });
+                const filesData = (await parsePortalJson(filesResponse, 'uploaded files'));
+                const capabilitiesResponse = await safeFetch_1.safeFetch.call(this, `https://${normalizedDomain}/planner/api/v1/schedule/upload`, {
+                    method: 'POST',
+                    headers: {
+                        accept: 'application/json',
+                        'content-type': 'application/json',
+                        cookie: buildCookieHeader(phpSessId),
+                        origin: `https://${normalizedDomain}`,
+                    },
+                    body: JSON.stringify({ uploadDir }),
+                });
+                const capabilitiesData = (await parsePortalJson(capabilitiesResponse, 'schedule upload'));
+                const dateFromRaw = this.getNodeParameter('timetableFromDate', itemIndex);
+                const dateToRaw = this.getNodeParameter('timetableToDate', itemIndex);
+                const classesRaw = this.getNodeParameter('timetableClasses', itemIndex);
+                const teachersRaw = this.getNodeParameter('timetableTeachers', itemIndex);
+                const typesRaw = this.getNodeParameter('timetableTypes', itemIndex);
+                const fieldsRaw = this.getNodeParameter('timetableFields', itemIndex);
+                const deletePlannedElements = this.getNodeParameter('timetableDeletePlannedElements', itemIndex);
+                const notifyStudents = this.getNodeParameter('timetableNotifyStudents', itemIndex);
+                const notifyTeachers = this.getNodeParameter('timetableNotifyTeachers', itemIndex);
+                const classes = parseDelimitedList(classesRaw).map((value) => /^\d+$/.test(value) ? Number(value) : value);
+                const teachers = parseOptionalJsonObject(teachersRaw, 'Teachers');
+                const types = parseDelimitedList(typesRaw);
+                const fields = parseDelimitedList(fieldsRaw);
+                const options = {
+                    dateFrom: dateFromRaw.split('T')[0],
+                    dateTo: dateToRaw.split('T')[0],
+                    classes,
+                    teachers,
+                    types,
+                    fields,
+                    sendNotificationStudents: notifyStudents,
+                    sendNotificationTeachers: notifyTeachers,
+                    deletePlannedElements,
+                };
+                const validateResponse = await safeFetch_1.safeFetch.call(this, `https://${normalizedDomain}/planner/api/v1/schedule/validate`, {
+                    method: 'POST',
+                    headers: {
+                        accept: 'application/json',
+                        'content-type': 'application/json',
+                        cookie: buildCookieHeader(phpSessId),
+                        origin: `https://${normalizedDomain}`,
+                    },
+                    body: JSON.stringify({ options, uploadDir }),
+                });
+                const validateData = (await parsePortalJson(validateResponse, 'schedule validate'));
+                const unknownTeachers = ((_f = validateData.unknownTeachers) !== null && _f !== void 0 ? _f : []);
+                if (unknownTeachers.length > 0) {
+                    const list = unknownTeachers
+                        .map((entry) => entry.value)
+                        .filter(Boolean)
+                        .slice(0, 10)
+                        .join(', ');
+                    throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Timetable validation failed: unknown teachers (${list}).`, { itemIndex });
+                }
+                if (validateData.scheduleCouldNotBeValidated) {
+                    throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'Timetable validation failed: schedule could not be validated.', { itemIndex });
+                }
+                const startResponse = await safeFetch_1.safeFetch.call(this, `https://${normalizedDomain}/planner/api/v1/schedule/start`, {
+                    method: 'POST',
+                    headers: {
+                        accept: 'application/json',
+                        'content-type': 'application/json',
+                        cookie: buildCookieHeader(phpSessId),
+                        origin: `https://${normalizedDomain}`,
+                    },
+                    body: JSON.stringify({ options, uploadDir }),
+                });
+                let startBody = {};
+                try {
+                    const parsed = await startResponse.json();
+                    if (parsed && typeof parsed === 'object') {
+                        startBody = parsed;
+                    }
+                }
+                catch (_) {
+                    startBody = {};
+                }
+                returnData.push({
+                    json: {
+                        uploadDir,
+                        files: filesData,
+                        capabilities: capabilitiesData,
+                        validation: validateData,
+                        start: startBody,
+                    },
                     pairedItem: { item: itemIndex },
                 });
                 continue;
@@ -934,26 +1215,26 @@ class SmartSchoolPortal {
                         const hourId = hourEntry.hourID;
                         const hourTitle = hourEntry.title;
                         const classData = (await fetchPresenceClass(classId, hourId));
-                        const pupils = ((_d = classData.pupils) !== null && _d !== void 0 ? _d : []);
+                        const pupils = ((_g = classData.pupils) !== null && _g !== void 0 ? _g : []);
                         for (const pupil of pupils) {
-                            const presences = ((_e = pupil.presence) !== null && _e !== void 0 ? _e : []);
+                            const presences = ((_h = pupil.presence) !== null && _h !== void 0 ? _h : []);
                             for (const presence of presences) {
-                                const code = ((_f = presence.code) !== null && _f !== void 0 ? _f : {});
+                                const code = ((_j = presence.code) !== null && _j !== void 0 ? _j : {});
                                 rows.push({
                                     classId,
                                     className,
                                     hourId,
                                     hourTitle,
-                                    presenceDate: (_g = presence.presenceDate) !== null && _g !== void 0 ? _g : presenceDateOnly,
-                                    pupilId: (_h = pupil.userID) !== null && _h !== void 0 ? _h : pupil.userId,
+                                    presenceDate: (_k = presence.presenceDate) !== null && _k !== void 0 ? _k : presenceDateOnly,
+                                    pupilId: (_l = pupil.userID) !== null && _l !== void 0 ? _l : pupil.userId,
                                     pupilName: pupil.name,
                                     pupilSurname: pupil.surname,
-                                    pupilFullName: (_j = pupil.nameBIN) !== null && _j !== void 0 ? _j : pupil.name,
+                                    pupilFullName: (_m = pupil.nameBIN) !== null && _m !== void 0 ? _m : pupil.name,
                                     presenceId: presence.presenceID,
-                                    codeId: (_k = presence.codeID) !== null && _k !== void 0 ? _k : code.codeID,
+                                    codeId: (_o = presence.codeID) !== null && _o !== void 0 ? _o : code.codeID,
                                     codeName: code.name,
                                     codeColor: code.color,
-                                    isOfficial: (_l = code.isOfficial) !== null && _l !== void 0 ? _l : presence.isOfficial,
+                                    isOfficial: (_p = code.isOfficial) !== null && _p !== void 0 ? _p : presence.isOfficial,
                                     lastAuthorName: presence.lastAuthorName,
                                     lastAuthorUserIdentifier: presence.lastAuthorUserIdentifier,
                                     encodedAt: presence.date,
